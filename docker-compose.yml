@@ -1,0 +1,48 @@
+version: '3'
+
+services:
+  zookeeper:
+    image: zookeeper:3.9.2
+    container_name: zookeeper
+    networks:
+      - bk_network
+    ports:
+      - "2181:2181"
+    restart: always
+
+  bookie1:
+    image: apache/bookkeeper:4.15.5
+    container_name: bookie1
+    environment:
+      BK_zkServers: zookeeper:2181
+    networks:
+      - bk_network
+    depends_on:
+      - zookeeper
+    restart: unless-stopped
+
+  bookie2:
+    image: apache/bookkeeper:4.15.5
+    container_name: bookie2
+    environment:
+      BK_zkServers: zookeeper:2181
+    networks:
+      - bk_network
+    depends_on:
+      - bookie1
+    restart: unless-stopped
+
+  bookie3:
+    image: apache/bookkeeper:4.15.5
+    container_name: bookie3
+    environment:
+      BK_zkServers: zookeeper:2181
+    networks:
+      - bk_network
+    depends_on:
+      - bookie2
+    restart: unless-stopped
+
+networks:
+  bk_network:
+    driver: bridge
