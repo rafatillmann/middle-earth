@@ -22,7 +22,7 @@ import java.net.URI;
 
 import static org.apache.zookeeper.KeeperException.Code.NODEEXISTS;
 
-public class Proxy {
+public class ProxyDL {
 
     private static Namespace namespace;
 
@@ -67,9 +67,9 @@ public class Proxy {
              BufferedReader clientIn = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
              PrintWriter clientOut = new PrintWriter(clientSocket.getOutputStream(), true);
              BufferedReader serverIn = new BufferedReader(new InputStreamReader(serverSocket.getInputStream()));
-             PrintWriter serverOut = new PrintWriter(serverSocket.getOutputStream(), true);) {
+             PrintWriter serverOut = new PrintWriter(serverSocket.getOutputStream(), true)) {
 
-            String logName = String.format("Client%s", clientSocket.hashCode());
+            var logName = String.format("Client%s", clientSocket.hashCode());
 
             // Upload data to DL
             uploadLog(clientIn, logName);
