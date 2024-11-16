@@ -8,23 +8,22 @@ import java.net.ServerSocket;
 import java.net.Socket;
 
 public class Server {
+    private static final int SERVER_PORT = 6000;
+
     public static void main(String[] args) throws IOException {
-        int port = 5000; // Server port
-
-        ServerSocket serverSocket = new ServerSocket(port);
-        System.out.println("Server listening on port " + port);
+        ServerSocket serverSocket = new ServerSocket(SERVER_PORT);
+        System.out.println("Server listening on port " + SERVER_PORT);
         Socket socket = serverSocket.accept();
-		
-        try (BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-             PrintWriter out = new PrintWriter(socket.getOutputStream(), true)) {
 
-            while (true) {
-                String request = in.readLine();
+        try (BufferedReader clientIn = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+             PrintWriter clientOut = new PrintWriter(socket.getOutputStream(), true)) {
+
+            String request;
+            while ((request = clientIn.readLine()) != null) {
                 System.out.println("Received from client: " + request);
                 String response = "Echo: " + request;
-                out.println(response);
+                clientOut.println(response);
             }
-
         } catch (IOException e) {
             e.printStackTrace();
         }

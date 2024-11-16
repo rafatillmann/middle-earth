@@ -1,6 +1,5 @@
 package org.example.proxy;
 
-import org.apache.bookkeeper.client.BKException;
 import org.example.logger.Logger;
 
 import java.io.BufferedReader;
@@ -37,22 +36,22 @@ public class Proxy {
         try {
             BufferedReader clientIn = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
             PrintWriter clientOut = new PrintWriter(clientSocket.getOutputStream(), true);
-            while (!clientSocket.isClosed()) {
+
+            String message;
+            while ((message = clientIn.readLine()) != null) {
                 // Upload
                 try {
-                    var message = clientIn.readLine();
-                    if (message != null) {
-                        logger.addMessage(message);
-                    }
-                } catch (IOException | InterruptedException | BKException e) {
+                    logger.writeLog(message);
+
+                } catch (IOException e) {
                     e.printStackTrace();
                 }
 
                 // Forward data from client to server
                 try {
-                    var lastMessage = logger.readLastMessage();
+                    var lastMessage = logger.readLog();
                     serverOut.println(lastMessage);
-                } catch (InterruptedException | BKException e) {
+                } catch (IOException e) {
                     e.printStackTrace();
                 }
 
