@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
+import java.util.concurrent.TimeUnit;
 
 public class Client {
 
@@ -13,8 +14,9 @@ public class Client {
     private static final int NUM_CONNECTIONS = 2;
 
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws InterruptedException {
         for (int i = 0; i < NUM_CONNECTIONS; i++) {
+            TimeUnit.SECONDS.sleep(2);
             new Thread(Client::newConnection).start();
         }
     }
@@ -23,7 +25,6 @@ public class Client {
         try (Socket socket = new Socket(PROXY_HOST, PROXY_PORT)) {
             BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
-
             System.out.println("Sending to server: Test " + Thread.currentThread().getId());
             out.println("Test " + Thread.currentThread().getId());
 

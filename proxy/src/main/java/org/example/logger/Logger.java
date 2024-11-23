@@ -1,6 +1,7 @@
 package org.example.logger;
 
 import org.apache.distributedlog.AppendOnlyStreamWriter;
+import org.apache.distributedlog.DLSN;
 import org.apache.distributedlog.DistributedLogConfiguration;
 import org.apache.distributedlog.api.DistributedLogManager;
 import org.apache.distributedlog.api.namespace.Namespace;
@@ -11,6 +12,8 @@ import org.apache.distributedlog.metadata.DLMetadata;
 
 import java.io.IOException;
 import java.net.URI;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 
 import static org.apache.zookeeper.KeeperException.Code.NODEEXISTS;
 
@@ -41,19 +44,22 @@ public class Logger {
         }
     }
 
-    public void writeLog(String record) throws IOException {
+    public DLSN writeLog(String record) throws IOException, ExecutionException, InterruptedException {
         DistributedLogManager dlm = namespace.openLog(LOG_NAME);
         AppendOnlyStreamWriter writer = dlm.getAppendOnlyStreamWriter();
-        writer.write(record.getBytes());
+        CompletableFuture<DLSN> result = writer.write(record.getBytes());
         writer.close();
         dlm.close();
+        return result.get();
     }
 
-    public String readLog() throws IOException {
+    public String readLog(DLSN dlsn) throws IOException {
         DistributedLogManager dlm = namespace.openLog(LOG_NAME);
-        var result = dlm.getLastLogRecord();
+        var reader = dlm.openLogReader(dlsn);
+        var result = new String(reader.readNext(false).getPayload());
+        reader.close();
         dlm.close();
-        return new String(result.getPayload());
+        return result;
     }
 
     private static URI initializeNamespace() throws IOException {

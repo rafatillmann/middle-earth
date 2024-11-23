@@ -8,6 +8,7 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.concurrent.ExecutionException;
 
 public class Proxy {
 
@@ -41,15 +42,8 @@ public class Proxy {
             while ((message = clientIn.readLine()) != null) {
                 // Upload
                 try {
-                    logger.writeLog(message);
-
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-
-                // Forward data from client to server
-                try {
-                    var lastMessage = logger.readLog();
+                    var dlsn = logger.writeLog(message);
+                    var lastMessage = logger.readLog(dlsn);
                     serverOut.println(lastMessage);
                 } catch (IOException e) {
                     e.printStackTrace();
@@ -59,7 +53,7 @@ public class Proxy {
                 String request = serverIn.readLine();
                 clientOut.println(request);
             }
-        } catch (IOException e) {
+        } catch (IOException | ExecutionException | InterruptedException e) {
             e.printStackTrace();
         }
     }
