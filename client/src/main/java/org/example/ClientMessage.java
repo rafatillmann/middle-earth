@@ -8,7 +8,7 @@ import java.net.Socket;
 
 import static java.lang.System.in;
 
-public class ClientTest {
+public class ClientMessage {
     public static void main(String[] args) {
         String proxyHost = "localhost"; // Proxy server hostname
         int proxyPort = 5000; // Proxy server port

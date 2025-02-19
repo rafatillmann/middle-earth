@@ -1,22 +1,17 @@
 package org.example.proxy;
 
-import org.example.logger.Logger;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.concurrent.ExecutionException;
 
 public class Proxy {
 
     private static final int PROXY_PORT = 6000;
     private static final String SERVER_HOST = "localhost";
     private static final int SERVER_PORT = 5000;
-
-    private static final Logger logger = new Logger();
 
     public static void main(String[] args) throws IOException {
 
@@ -40,20 +35,13 @@ public class Proxy {
 
             String message;
             while ((message = clientIn.readLine()) != null) {
-                // Upload
-                try {
-                    var dlsn = logger.writeLog(message);
-                    var lastMessage = logger.readLog(dlsn);
-                    serverOut.println(lastMessage);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
 
-                //Forward data from server to client
+                serverOut.println(message);
+
                 String request = serverIn.readLine();
                 clientOut.println(request);
             }
-        } catch (IOException | ExecutionException | InterruptedException e) {
+        } catch (IOException e) {
             e.printStackTrace();
         }
     }
