@@ -1,5 +1,8 @@
 package org.example.proxy;
 
+import org.example.interfaces.Log;
+import org.example.interfaces.LogFactory;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -13,7 +16,16 @@ public class Proxy {
     private static final String SERVER_HOST = "localhost";
     private static final int SERVER_PORT = 5000;
 
-    public static void main(String[] args) throws IOException {
+    private final LogFactory logFactory;
+    private Log log;
+
+    public Proxy(LogFactory logFactory) {
+        this.logFactory = logFactory;
+    }
+
+    public void start() throws IOException {
+
+        this.log = logFactory.createLog(1);
 
         ServerSocket proxyServerSocket = new ServerSocket(PROXY_PORT);
         System.out.println("Proxy server listening on port " + PROXY_PORT);
@@ -28,20 +40,19 @@ public class Proxy {
         }
     }
 
-    private static void handleClient(Socket clientSocket, BufferedReader serverIn, PrintWriter serverOut) {
+    private void handleClient(Socket clientSocket, BufferedReader serverIn, PrintWriter serverOut) {
         try {
             BufferedReader clientIn = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
             PrintWriter clientOut = new PrintWriter(clientSocket.getOutputStream(), true);
 
-            String message;
-            while ((message = clientIn.readLine()) != null) {
-
-                serverOut.println(message);
-
-                String request = serverIn.readLine();
-                clientOut.println(request);
+            String request;
+            while ((request = clientIn.readLine()) != null) {
+                this.log.write(request.getBytes());
+                serverOut.println(request);
+                String response = serverIn.readLine();
+                clientOut.println(response);
             }
-        } catch (IOException e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }

@@ -31,19 +31,14 @@
         </dependency>
         <dependency>
             <groupId>org.apache.curator</groupId>
-            <artifactId>curator-x-async</artifactId>
-            <version>4.0.1</version>
+            <artifactId>curator-framework</artifactId>
+            <version>${curator.version}</version>
             <exclusions>
                 <exclusion>
                     <groupId>org.apache.zookeeper</groupId>
                     <artifactId>zookeeper</artifactId>
                 </exclusion>
             </exclusions>
-        </dependency>
-        <dependency>
-            <groupId>org.projectlombok</groupId>
-            <artifactId>lombok</artifactId>
-            <version>${lombok.version}</version>
         </dependency>
     </dependencies>
 
