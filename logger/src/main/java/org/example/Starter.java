@@ -1,5 +1,6 @@
 package org.example;
 
+import org.apache.bookkeeper.client.DefaultEnsemblePlacementPolicy;
 import org.apache.bookkeeper.client.api.BookKeeper;
 import org.apache.bookkeeper.conf.ClientConfiguration;
 import org.apache.curator.framework.CuratorFramework;
@@ -7,6 +8,7 @@ import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.ExponentialBackoffRetry;
 import org.example.bookkeeper.LedgerLogFactory;
 import org.example.interfaces.LogFactory;
+import org.example.proxy.Proxy;
 
 public class Starter {
 
@@ -14,6 +16,9 @@ public class Starter {
     private BookKeeper bookKeeper;
     private LogFactory logFactory;
 
+    private static final String ZK_URL = "localhost:2181";
+    private static final int ZK_RETRY_SLEEP_MS = 5000;
+    private static final int ZK_RETRY_COUNT = 5;
 
     public static void main(String[] args) {
         var starter = new Starter();
@@ -28,26 +33,26 @@ public class Starter {
         zookkeeper = getZkClient();
         bookKeeper = getBkClient();
         logFactory = getLogFactory();
+
+        new Proxy(logFactory).start();
     }
 
     private CuratorFramework getZkClient() {
-        // TODO - Adicionar as configurações de conexão do ZooKeeper
         CuratorFramework zkClient = CuratorFrameworkFactory
                 .builder()
-                //.connectString(this.serviceConfig.getZkURL())
-                .connectString("")
+                .connectString(ZK_URL)
                 .namespace("middle-earth")
-                //.retryPolicy(new ExponentialBackoffRetry(this.serviceConfig.getZkRetrySleepMs(), this.serviceConfig.getZkRetryCount()))
-                .retryPolicy(new ExponentialBackoffRetry(1, 1))
+                .retryPolicy(new ExponentialBackoffRetry(ZK_RETRY_SLEEP_MS, ZK_RETRY_COUNT))
                 .build();
         zkClient.start();
         return zkClient;
     }
 
     private BookKeeper getBkClient() throws Exception {
-        // TODO - Adicionar as configurações de conexão no BookKeeper
         ClientConfiguration config = new ClientConfiguration()
-                .setClientTcpNoDelay(true);
+                .setClientTcpNoDelay(true)
+                .setMetadataServiceUri("zk://localhost:2181/ledgers")
+                .setEnsemblePlacementPolicy(DefaultEnsemblePlacementPolicy.class);
         return BookKeeper.newBuilder(config).build();
 
     }

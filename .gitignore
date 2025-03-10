@@ -1,4 +1,4 @@
-proxy/target/
+logger/target/
 client/target/
 server/target/
 !.mvn/wrapper/maven-wrapper.jar

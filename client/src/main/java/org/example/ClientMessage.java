@@ -11,7 +11,7 @@ import static java.lang.System.in;
 public class ClientMessage {
     public static void main(String[] args) {
         String proxyHost = "localhost"; // Proxy server hostname
-        int proxyPort = 5000; // Proxy server port
+        int proxyPort = 6000; // Proxy server port
         BufferedReader input = new BufferedReader(new InputStreamReader(in));
         String line;
         try (Socket socket = new Socket(proxyHost, proxyPort);

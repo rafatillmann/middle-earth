@@ -1,5 +1,6 @@
 package org.example.proxy;
 
+import org.example.exception.LoggerException;
 import org.example.interfaces.Log;
 import org.example.interfaces.LogFactory;
 
@@ -23,7 +24,7 @@ public class Proxy {
         this.logFactory = logFactory;
     }
 
-    public void start() throws IOException {
+    public void start() throws IOException, LoggerException {
 
         this.log = logFactory.createLog(1);
 

@@ -1,7 +1,0 @@
-org/example/interfaces/Log.class
-org/example/proxy/Proxy.class
-org/example/bookkeeper/LedgerLog.class
-org/example/Starter.class
-org/example/exception/LoggerException.class
-org/example/bookkeeper/LedgerLogFactory.class
-org/example/interfaces/LogFactory.class
