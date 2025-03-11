@@ -13,12 +13,13 @@ import java.util.regex.Pattern;
 
 
 public class Server {
-    private static final int SERVER_PORT = 5000;
     private static final Map<Integer, String> store = new HashMap<>();
 
     public static void main(String[] args) {
-        try (ServerSocket serverSocket = new ServerSocket(SERVER_PORT)) {
-            System.out.println("Server listening on port " + SERVER_PORT);
+        int port = Integer.parseInt(args[0]);
+
+        try (ServerSocket serverSocket = new ServerSocket(port)) {
+            System.out.println("Server listening on port " + port);
 
             while (true) {
                 Socket clientSocket = serverSocket.accept();

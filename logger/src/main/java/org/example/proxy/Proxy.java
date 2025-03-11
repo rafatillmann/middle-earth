@@ -13,7 +13,6 @@ import java.net.Socket;
 
 public class Proxy {
 
-    private static final int PROXY_PORT = 6000;
     private static final String SERVER_HOST = "localhost";
     private static final int SERVER_PORT = 5000;
 
@@ -24,12 +23,12 @@ public class Proxy {
         this.logFactory = logFactory;
     }
 
-    public void start() throws IOException, LoggerException {
+    public void start(int port) throws IOException, LoggerException {
 
         this.log = logFactory.createLog(1);
 
-        ServerSocket proxyServerSocket = new ServerSocket(PROXY_PORT);
-        System.out.println("Proxy server listening on port " + PROXY_PORT);
+        ServerSocket proxyServerSocket = new ServerSocket(port);
+        System.out.println("Proxy server listening on port " + port);
 
         Socket serverSocket = new Socket(SERVER_HOST, SERVER_PORT);
         BufferedReader serverIn = new BufferedReader(new InputStreamReader(serverSocket.getInputStream()));
