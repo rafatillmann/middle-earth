@@ -8,21 +8,21 @@ import org.example.interfaces.LogFactory;
 
 public class LedgerLogFactory implements LogFactory, AutoCloseable {
 
-    private CuratorFramework zookkeeper;
-    private final BookKeeper bookKeeper;
+	private CuratorFramework zookkeeper;
+	private final BookKeeper bookKeeper;
 
-    public LedgerLogFactory(CuratorFramework zookkeeper, BookKeeper bookKeeper) {
-        this.zookkeeper = zookkeeper;
-        this.bookKeeper = bookKeeper;
-    }
+	public LedgerLogFactory(CuratorFramework zookkeeper, BookKeeper bookKeeper) {
+		this.zookkeeper = zookkeeper;
+		this.bookKeeper = bookKeeper;
+	}
 
-    @Override
-    public Log createLog(long logId) throws LoggerException {
-        return new LedgerLog(logId, bookKeeper);
-    }
+	@Override
+	public Log open(long logId) throws LoggerException {
+		return new LedgerLog(logId, bookKeeper);
+	}
 
-    @Override
-    public void close() throws Exception {
-        this.bookKeeper.close();
-    }
+	@Override
+	public void close() throws Exception {
+		this.bookKeeper.close();
+	}
 }
