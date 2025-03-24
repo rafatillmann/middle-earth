@@ -1,8 +1,12 @@
 package org.example.interfaces;
 
+import java.util.Set;
+
 import org.example.exception.LoggerException;
 
 public interface LogFactory {
 
-    public Log open(long logId) throws LoggerException;
+	Log open(long logId) throws LoggerException;
+
+	Set<LogCursor> cursors(long logId) throws LoggerException;
 }

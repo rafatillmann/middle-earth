@@ -1,6 +1,7 @@
 package org.example.bookkeeper;
 
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 
 import org.apache.bookkeeper.client.api.BKException;
@@ -10,6 +11,7 @@ import org.apache.bookkeeper.client.api.WriteHandle;
 import org.example.exception.LoggerException;
 import org.example.interfaces.Log;
 import org.example.interfaces.LogCallback.AddEntryCallback;
+import org.example.interfaces.LogCursor;
 
 import com.google.common.collect.ImmutableMap;
 
@@ -17,34 +19,30 @@ public class LedgerLog implements Log {
 
 	private final long logId;
 	private final BookKeeper bookKeeper;
+	private final Set<LogCursor> cursors;
+
 	private WriteHandle writer;
 	private ReadHandle reader;
 
-	public LedgerLog(long logId, BookKeeper bookKeeper) throws LoggerException {
-		// TODO - Initialize cursor LedgerLog
+	public LedgerLog(long logId, BookKeeper bookKeeper, Set<LogCursor> cursors) throws LoggerException {
+		// TODO - Add metadata to zookkeeper to recovery if writer was crashed
 		this.logId = logId;
 		this.bookKeeper = bookKeeper;
+		this.cursors = cursors;
 		this.writer = writer();
 	}
 
 	@Override
 	public void write(byte[] data) throws Exception {
 		try {
-			write(data, new AddEntryCallback() {
-				@Override public void onComplete() {
-
-				}
-			});
+			write(data, entryId -> notifyAddEntry(entryId));
 		} catch (BKException | InterruptedException e) {
 			throw new LoggerException("Unable to append data", e);
 		}
 	}
 
 	public void write(byte[] data, AddEntryCallback callback) throws BKException, InterruptedException {
-		writer.appendAsync(data)
-				.thenAcceptAsync(entryId -> {
-					callback.onComplete();
-				});
+		writer.appendAsync(data).thenAcceptAsync(entryId -> callback.onComplete(entryId));
 	}
 
 	@Override
@@ -76,5 +74,12 @@ public class LedgerLog implements Log {
 		return ImmutableMap.<String, byte[]>builder()
 				.put("logId", Long.toString(logId).getBytes())
 				.build();
+	}
+
+	private void notifyAddEntry(Long entryId) {
+		for (LogCursor cursor : cursors) {
+			// TODO - Add logic to notify cursors to read entries and send to replicas
+			System.out.println("Notify cursors" + entryId);
+		}
 	}
 }

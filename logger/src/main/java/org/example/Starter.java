@@ -6,27 +6,22 @@ import org.apache.bookkeeper.conf.ClientConfiguration;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.ExponentialBackoffRetry;
-import org.example.ambassador.SocketAmbassador;
 import org.example.bookkeeper.LedgerLogFactory;
-import org.example.interfaces.Ambassador;
+import org.example.config.Config;
 import org.example.interfaces.LogFactory;
+import org.example.proxy.Proxy;
 
 public class Starter {
 
 	private CuratorFramework zookkeeper;
 	private BookKeeper bookKeeper;
 	private LogFactory logFactory;
-	private Ambassador ambassador;
-
-	private static final String ZK_URL = "localhost:2181";
-	private static final int ZK_RETRY_SLEEP_MS = 5000;
-	private static final int ZK_RETRY_COUNT = 5;
+	private Proxy proxy;
 
 	public static void main(String[] args) {
-		int port = Integer.parseInt(args[0]);
 		var starter = new Starter();
 		try {
-			starter.start(port);
+			starter.start(Config.getServerPort());
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -36,16 +31,16 @@ public class Starter {
 		zookkeeper = getZkClient();
 		bookKeeper = getBkClient();
 		logFactory = getLogFactory();
-		ambassador = getProxy();
-		ambassador.start(port);
+		proxy = getProxy();
+		proxy.start(port);
 	}
 
 	private CuratorFramework getZkClient() {
 		CuratorFramework zkClient = CuratorFrameworkFactory
 				.builder()
-				.connectString(ZK_URL)
+				.connectString(Config.getZkUri())
 				.namespace("middle-earth")
-				.retryPolicy(new ExponentialBackoffRetry(ZK_RETRY_SLEEP_MS, ZK_RETRY_COUNT))
+				.retryPolicy(new ExponentialBackoffRetry(Config.getZkRetrySleepMs(), Config.getZkRetryCount()))
 				.build();
 		zkClient.start();
 		return zkClient;
@@ -64,7 +59,7 @@ public class Starter {
 		return new LedgerLogFactory(zookkeeper, bookKeeper);
 	}
 
-	private Ambassador getProxy() {
-		return new SocketAmbassador(logFactory);
+	private Proxy getProxy() {
+		return new Proxy(logFactory);
 	}
 }
