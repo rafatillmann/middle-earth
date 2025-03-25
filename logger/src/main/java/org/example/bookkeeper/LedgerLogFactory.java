@@ -7,7 +7,7 @@ import java.util.Set;
 import org.apache.bookkeeper.client.api.BookKeeper;
 import org.apache.curator.framework.CuratorFramework;
 import org.example.config.Config;
-import org.example.cursor.LedgerLogCursor;
+import org.example.cursor.LedgerCursor;
 import org.example.exception.LoggerException;
 import org.example.interfaces.Log;
 import org.example.interfaces.LogCursor;
@@ -32,7 +32,7 @@ public class LedgerLogFactory implements LogFactory, AutoCloseable {
 	public Set<LogCursor> cursors(long logId) {
 		Set<LogCursor> cursors = new HashSet<>();
 		for (Map.Entry<String, String> entry : Config.getReplicaInfo().entrySet()) {
-			cursors.add(new LedgerLogCursor(logId, entry.getKey(), entry.getValue()));
+			cursors.add(new LedgerCursor(logId, entry.getKey(), entry.getValue()));
 		}
 		return cursors;
 	}
