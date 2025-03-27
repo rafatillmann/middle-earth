@@ -1,5 +1,6 @@
 package org.example.bookkeeper;
 
+import java.net.URI;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -25,14 +26,17 @@ public class LedgerLogFactory implements LogFactory, AutoCloseable {
 
 	@Override
 	public Log open(long logId) throws LoggerException {
-		return new LedgerLog(logId, bookKeeper, cursors(logId));
+		var ledgerLog = new LedgerLog(logId, bookKeeper);
+		var cursors = initializeCursors(ledgerLog);
+		ledgerLog.initialize(cursors);
+		return ledgerLog;
 	}
 
 	@Override
-	public Set<LogCursor> cursors(long logId) {
+	public Set<LogCursor> initializeCursors(Log log) {
 		Set<LogCursor> cursors = new HashSet<>();
-		for (Map.Entry<String, String> entry : Config.getReplicaInfo().entrySet()) {
-			cursors.add(new LedgerCursor(logId, entry.getKey(), entry.getValue()));
+		for (Map.Entry<String, URI> entry : Config.getReplicaInfo().entrySet()) {
+			cursors.add(new LedgerCursor(log, entry.getKey(), entry.getValue()));
 		}
 		return cursors;
 	}

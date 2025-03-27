@@ -8,5 +8,5 @@ public interface LogFactory {
 
 	Log open(long logId) throws LoggerException;
 
-	Set<LogCursor> cursors(long logId) throws LoggerException;
+	Set<LogCursor> initializeCursors(Log log) throws LoggerException;
 }

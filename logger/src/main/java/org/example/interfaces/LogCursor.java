@@ -1,6 +1,8 @@
 package org.example.interfaces;
 
+import org.example.exception.LoggerException;
+
 public interface LogCursor {
 
-	byte[] read() throws Exception;
+	void notifyCursor(long entryId) throws LoggerException;
 }

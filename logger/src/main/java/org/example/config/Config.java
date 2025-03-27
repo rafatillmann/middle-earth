@@ -1,12 +1,14 @@
 package org.example.config;
 
+import static java.util.stream.Collectors.toMap;
+
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Arrays;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 public class Config {
@@ -46,10 +48,16 @@ public class Config {
 		return Long.parseLong(properties.getProperty("me.log.id"));
 	}
 
-	public static Map<String, String> getReplicaInfo() {
-		List<String> keys = Arrays.stream(properties.getProperty("me.replica.id").split(",")).toList();
-		List<String> values = Arrays.stream(properties.getProperty("me.replica.uri").split(",")).toList();
+	public static Map<String, URI> getReplicaInfo() {
+		List<String> keys = List.of(properties.getProperty("me.replica.id").split(","));
+		List<String> values = List.of(properties.getProperty("me.replica.uri").split(","));
 
-		return IntStream.range(0, keys.size()).boxed().collect(Collectors.toMap(keys::get, values::get));
+		return IntStream.range(0, keys.size()).boxed().collect(toMap(keys::get, i -> {
+			try {
+				return new URI(values.get(i));
+			} catch (URISyntaxException e) {
+				throw new RuntimeException(e);
+			}
+		}));
 	}
 }

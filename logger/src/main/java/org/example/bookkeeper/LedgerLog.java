@@ -1,5 +1,6 @@
 package org.example.bookkeeper;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -21,21 +22,25 @@ public class LedgerLog implements Log {
 
 	private final long logId;
 	private final BookKeeper bookKeeper;
-	private final Set<LogCursor> activeCursors;
 
+	private Set<LogCursor> activeCursors;
 	private WriteHandle writer;
 	private ReadHandle reader;
 
-	public LedgerLog(long logId, BookKeeper bookKeeper, Set<LogCursor> activeCursors) throws LoggerException {
+	public LedgerLog(long logId, BookKeeper bookKeeper) throws LoggerException {
 		// TODO - Add metadata to zookkeeper to recovery if writer was crashed
 		this.logId = logId;
 		this.bookKeeper = bookKeeper;
-		this.activeCursors = activeCursors;
 		this.writer = writer();
+		this.reader = reader();
+	}
+
+	public void initialize(Set<LogCursor> activeCursors) {
+		this.activeCursors = activeCursors;
 	}
 
 	@Override
-	public void write(byte[] data) throws Exception {
+	public void write(byte[] data) throws LoggerException {
 		try {
 			write(data, entryId -> notifyAddEntry(entryId));
 		} catch (BKException | InterruptedException e) {
@@ -48,25 +53,31 @@ public class LedgerLog implements Log {
 	}
 
 	@Override
-	public LogEntry read(long entryId) throws Exception {
+	public LogEntry read(long entryId) throws LoggerException {
 		try {
 			return reader.readAsync(entryId, entryId)
 					.thenApply(ledgerEntries -> ledgerEntries.getEntry(entryId))
 					.thenApply(ledgerEntry -> new LedgerEntry(ledgerEntry.getEntryId(), ledgerEntry.getEntryBytes()))
 					.get();
-		} catch (InterruptedException e) {
+		} catch (InterruptedException | ExecutionException e) {
 			throw new LoggerException("Unable to read data", e);
 		}
 	}
 
+	// TODO - Use iterable
 	@Override
-	public List<LogEntry> read(long firstEntryId, long lastEntryId) throws Exception {
-		//		try {
-		//		} catch (BKException | InterruptedException e) {
-		//			throw new LoggerException("Unable to read data", e);
-		//		}
-		// TODO - Add read to bookkeeper using LogEntry wrapper
-		return List.of(new LedgerEntry(1, "Test".getBytes()));
+	public List<LogEntry> read(long firstEntryId, long lastEntryId) throws LoggerException {
+		try {
+			return reader.readAsync(firstEntryId, lastEntryId)
+					.thenApply(ledgerEntries -> {
+						List<LogEntry> result = new ArrayList<>();
+						ledgerEntries.forEach(entry -> result.add(new LedgerEntry(entry.getEntryId(), entry.getEntryBytes())));
+						return result;
+					}).get();
+		} catch (InterruptedException | ExecutionException e) {
+			throw new LoggerException("Unable to read data", e);
+		}
+
 	}
 
 	private WriteHandle writer() throws LoggerException {
@@ -84,6 +95,10 @@ public class LedgerLog implements Log {
 		}
 	}
 
+	private ReadHandle reader() {
+
+	}
+
 	private Map<String, byte[]> createLedgerCustomMetadata(long logId) {
 		return ImmutableMap.<String, byte[]>builder()
 				.put("logId", Long.toString(logId).getBytes())
@@ -91,9 +106,12 @@ public class LedgerLog implements Log {
 	}
 
 	private void notifyAddEntry(Long entryId) {
-		for (LogCursor cursor : activeCursors) {
-			// TODO - Add logic to notify cursors to read entries and send to replicas
-			System.out.println("Notify cursors" + entryId);
+		for (LogCursor activeCursor : activeCursors) {
+			try {
+				activeCursor.notifyCursor(entryId);
+			} catch (LoggerException e) {
+				e.printStackTrace();
+			}
 		}
 	}
 }
