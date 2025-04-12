@@ -16,7 +16,7 @@ import java.util.Set;
 
 public class BookKeeperLogFactory implements LogFactory {
 
-    private CuratorFramework zookkeeper;
+    private final CuratorFramework zookkeeper;
     private final BookKeeper bookKeeper;
 
     public BookKeeperLogFactory(CuratorFramework zookkeeper, BookKeeper bookKeeper) {
@@ -26,14 +26,12 @@ public class BookKeeperLogFactory implements LogFactory {
 
     @Override
     public Log open(long logId) throws LoggerException {
-        var ledgerLog = new BookKeeperLog(logId, bookKeeper);
-        var cursors = getCursors(ledgerLog);
-        ledgerLog.initializeCursors(cursors);
-        return ledgerLog;
+        var bookkeeperLog = new BookKeeperLog(logId, bookKeeper);
+        bookkeeperLog.initializeCursors(getCursors(bookkeeperLog));
+        return bookkeeperLog;
     }
 
-    @Override
-    public Set<Cursor> getCursors(Log log) throws LoggerException {
+    private Set<Cursor> getCursors(Log log) throws LoggerException {
         Set<Cursor> cursors = new HashSet<>();
         for (Map.Entry<String, URI> entry : Config.getReplicaInfo().entrySet()) {
             cursors.add(new BookKeeperCursor(log, entry.getKey(), entry.getValue()));

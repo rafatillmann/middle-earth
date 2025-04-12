@@ -58,7 +58,7 @@ public class Starter {
     private LogFactory getLogFactory() {
         return new BookKeeperLogFactory(zookkeeper, bookKeeper);
     }
-
+    
     private Proxy getProxy() {
         return new Proxy(logFactory);
     }

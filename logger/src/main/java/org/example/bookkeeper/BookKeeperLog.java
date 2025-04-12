@@ -11,16 +11,20 @@ import org.example.interfaces.Entry;
 import org.example.interfaces.Log;
 import org.example.interfaces.LogCallback.AddEntryCallback;
 
+import java.net.Socket;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 
-public class BookKeeperLog implements Log {
+public class BookKeeperLog implements Log, AutoCloseable {
 
     private final long logId;
     private final BookKeeper bookKeeper;
+
+    private final ConcurrentHashMap<Long, Socket> clientsToReply = new ConcurrentHashMap<>();
 
     private Set<Cursor> activeCursors;
     private WriteHandle writer;
@@ -41,16 +45,32 @@ public class BookKeeperLog implements Log {
     }
 
     @Override
-    public void write(byte[] data) throws LoggerException {
+    public long write(byte[] data) throws LoggerException {
         try {
-            write(data, entryId -> notifyAddEntry(entryId));
-        } catch (BKException | InterruptedException e) {
+            return write(data, this::notifyAddEntry);
+        } catch (BKException | InterruptedException | ExecutionException e) {
             throw new LoggerException("Unable to append data", e);
         }
     }
 
-    public void write(byte[] data, AddEntryCallback callback) throws BKException, InterruptedException {
-        writer.appendAsync(data).thenAcceptAsync(entryId -> callback.onComplete(entryId));
+    @Override
+    public long write(byte[] data, Socket socketToReply) throws LoggerException {
+        try {
+            return write(data, entryId -> {
+                addClientToReply(entryId, socketToReply);
+                notifyAddEntry(entryId);
+            });
+        } catch (BKException | InterruptedException | ExecutionException e) {
+            throw new LoggerException("Unable to append data", e);
+        }
+    }
+
+    public long write(byte[] data, AddEntryCallback callback) throws BKException, InterruptedException, ExecutionException {
+        return writer.appendAsync(data)
+                .thenApplyAsync(entryId -> {
+                    callback.onComplete(entryId);
+                    return entryId;
+                }).get();
     }
 
     @Override
@@ -80,6 +100,16 @@ public class BookKeeperLog implements Log {
 
     }
 
+    @Override
+    public void addClientToReply(long entryId, Socket socket) {
+        clientsToReply.put(entryId, socket);
+    }
+
+    @Override
+    public Socket getClientToReply(long entryId) {
+        return clientsToReply.remove(entryId);
+    }
+
     private WriteHandle writer() throws LoggerException {
         try {
             return bookKeeper.newCreateLedgerOp()
@@ -95,6 +125,7 @@ public class BookKeeperLog implements Log {
         }
     }
 
+    // TODO - Use read handle instance when create single log abstraction
     private ReadHandle reader() throws LoggerException {
         try {
             return bookKeeper.newOpenLedgerOp()
@@ -121,5 +152,10 @@ public class BookKeeperLog implements Log {
                 e.printStackTrace();
             }
         }
+    }
+
+    @Override
+    public void close() throws Exception {
+        bookKeeper.close();
     }
 }
