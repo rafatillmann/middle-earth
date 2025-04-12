@@ -1,15 +1,15 @@
 package org.example.interfaces;
 
-import java.util.List;
-
 import org.example.exception.LoggerException;
+
+import java.util.List;
 
 public interface Log {
 
-	void write(byte[] data) throws LoggerException;
+    void write(byte[] data) throws LoggerException;
 
-	LogEntry read(long id) throws LoggerException;
+    Entry read(long entryId) throws LoggerException;
 
-	List<LogEntry> read(long firstEntryId, long lastEntryId) throws LoggerException;
+    List<Entry> read(long firstEntryId, long lastEntryId) throws LoggerException;
 
 }
