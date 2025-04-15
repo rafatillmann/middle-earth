@@ -1,6 +1,7 @@
 package org.example.bookkeeper;
 
 import com.google.common.collect.ImmutableMap;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.bookkeeper.client.api.BKException;
 import org.apache.bookkeeper.client.api.BookKeeper;
 import org.apache.bookkeeper.client.api.ReadHandle;
@@ -19,7 +20,8 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 
-public class BookKeeperLog implements Log, AutoCloseable {
+@Slf4j
+public class BookKeeperLog implements Log {
 
     private final long logId;
     private final BookKeeper bookKeeper;
@@ -149,13 +151,8 @@ public class BookKeeperLog implements Log, AutoCloseable {
             try {
                 activeCursor.notifyCursor(entryId);
             } catch (LoggerException e) {
-                e.printStackTrace();
+                log.warn("Unable to notify cursors", e);
             }
         }
-    }
-
-    @Override
-    public void close() throws Exception {
-        bookKeeper.close();
     }
 }
