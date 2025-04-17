@@ -9,8 +9,8 @@ import org.apache.bookkeeper.client.api.WriteHandle;
 import org.example.exception.LoggerException;
 import org.example.interfaces.Cursor;
 import org.example.interfaces.Entry;
-import org.example.interfaces.Log;
 import org.example.interfaces.LogCallback.AddEntryCallback;
+import org.example.interfaces.LogManager;
 
 import java.net.Socket;
 import java.util.ArrayList;
@@ -21,7 +21,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 
 @Slf4j
-public class BookKeeperLog implements Log {
+public class BookKeeperLogManager implements LogManager {
 
     private final long logId;
     private final BookKeeper bookKeeper;
@@ -32,9 +32,10 @@ public class BookKeeperLog implements Log {
     private WriteHandle writer;
     private ReadHandle reader;
 
+    // TODO - Current Ledger will be necessary when implementing single log abstraction
     private long currentLedgerId;
 
-    public BookKeeperLog(long logId, BookKeeper bookKeeper) throws LoggerException {
+    public BookKeeperLogManager(long logId, BookKeeper bookKeeper) throws LoggerException {
         // TODO - Add metadata to zookkeeper to recovery if writer was crashed
         this.logId = logId;
         this.bookKeeper = bookKeeper;

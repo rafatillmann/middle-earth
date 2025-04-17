@@ -5,7 +5,7 @@ import org.example.exception.LoggerException;
 import java.net.Socket;
 import java.util.List;
 
-public interface Log {
+public interface LogManager {
 
     long write(byte[] data) throws LoggerException;
 

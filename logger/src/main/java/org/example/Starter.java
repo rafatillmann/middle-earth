@@ -6,16 +6,16 @@ import org.apache.bookkeeper.conf.ClientConfiguration;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.ExponentialBackoffRetry;
-import org.example.bookkeeper.BookKeeperLogFactory;
+import org.example.bookkeeper.BookKeeperLogManagerFactory;
 import org.example.config.Config;
-import org.example.interfaces.LogFactory;
+import org.example.interfaces.LogManagerFactory;
 import org.example.proxy.Proxy;
 
 public class Starter {
 
     private CuratorFramework zookkeeper;
     private BookKeeper bookKeeper;
-    private LogFactory logFactory;
+    private LogManagerFactory logManagerFactory;
     private Proxy proxy;
 
     public static void main(String[] args) {
@@ -30,7 +30,7 @@ public class Starter {
     private void start(int port) throws Exception {
         zookkeeper = getZkClient();
         bookKeeper = getBkClient();
-        logFactory = getLogFactory();
+        logManagerFactory = getLogFactory();
         proxy = getProxy();
         proxy.start(port);
     }
@@ -55,11 +55,11 @@ public class Starter {
 
     }
 
-    private LogFactory getLogFactory() {
-        return new BookKeeperLogFactory(zookkeeper, bookKeeper);
+    private LogManagerFactory getLogFactory() {
+        return new BookKeeperLogManagerFactory(zookkeeper, bookKeeper);
     }
-    
+
     private Proxy getProxy() {
-        return new Proxy(logFactory);
+        return new Proxy(logManagerFactory);
     }
 }

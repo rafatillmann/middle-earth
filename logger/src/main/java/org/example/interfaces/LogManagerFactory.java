@@ -2,7 +2,7 @@ package org.example.interfaces;
 
 import org.example.exception.LoggerException;
 
-public interface LogFactory {
+public interface LogManagerFactory {
 
-    Log open(long logId) throws LoggerException;
+    LogManager open(long logId) throws LoggerException;
 }
