@@ -1,10 +1,9 @@
-package org.example.bookkeeper;
+package org.example.ambassador;
 
-import lombok.extern.slf4j.Slf4j;
 import org.example.exception.LoggerException;
 import org.example.interfaces.Cursor;
 import org.example.interfaces.Entry;
-import org.example.interfaces.LogManager;
+import org.example.interfaces.Reader;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -15,38 +14,37 @@ import java.net.URI;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
-@Slf4j
-public class BookKeeperCursor implements Cursor {
+public class ACursor implements Cursor {
 
-    private final LogManager logManager;
-    private final String name;
     private final URI uri;
+    private final Reader reader;
+    private final Ambassador ambassador;
 
-    // TODO - Add lastEntryId to zookeeper
     private long lastReadEntryId = -1;
-    private Socket serverSocket;
+    private Socket socket;
 
-    public BookKeeperCursor(LogManager logManager, String name, URI uri) throws LoggerException {
-        this.logManager = logManager;
-        this.name = name;
+    public ACursor(URI uri, Ambassador ambassador, Reader reader) throws LoggerException {
         this.uri = uri;
-        this.serverSocket = socket();
+        this.reader = reader;
+        this.ambassador = ambassador;
+        this.socket = socket();
     }
 
     @Override
-    public void notifyCursor(long toEntryId) throws LoggerException {
+    public synchronized void entryAvailable(long toEntryId) throws LoggerException {
         try {
-            PrintWriter serverOut = new PrintWriter(serverSocket.getOutputStream(), true);
-            BufferedReader serverIn = new BufferedReader(new InputStreamReader(serverSocket.getInputStream()));
+            PrintWriter serverOut = new PrintWriter(socket.getOutputStream(), true);
+            BufferedReader serverIn = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 
             var fromEntryId = lastReadEntryId == -1 ? 0 : lastReadEntryId + 1;
-            for (Entry entry : logManager.read(fromEntryId, toEntryId)) {
+            for (Entry entry : reader.read(fromEntryId, toEntryId)) {
                 serverOut.println(new String(entry.getPayload(), UTF_8));
                 lastReadEntryId = entry.getEntryId();
 
                 var reply = serverIn.readLine();
 
-                var clientSocket = logManager.getClientToReply(lastReadEntryId);
+                var clientSocket = ambassador.getClientToReply(lastReadEntryId);
+
                 if (clientSocket != null) {
                     PrintWriter clientOut = new PrintWriter(clientSocket.getOutputStream(), true);
                     clientOut.println(reply);
@@ -64,4 +62,5 @@ public class BookKeeperCursor implements Cursor {
             throw new LoggerException("Unable to open Socket", e);
         }
     }
+
 }

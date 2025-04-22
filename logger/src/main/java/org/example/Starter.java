@@ -1,38 +1,40 @@
 package org.example;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.bookkeeper.client.DefaultEnsemblePlacementPolicy;
 import org.apache.bookkeeper.client.api.BookKeeper;
 import org.apache.bookkeeper.conf.ClientConfiguration;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.ExponentialBackoffRetry;
-import org.example.bookkeeper.BookKeeperLogManagerFactory;
+import org.example.ambassador.Ambassador;
+import org.example.bookkeeper.BookKeeperLoggerFactory;
 import org.example.config.Config;
-import org.example.interfaces.LogManagerFactory;
-import org.example.proxy.Proxy;
+import org.example.interfaces.LoggerFactory;
 
+@Slf4j
 public class Starter {
 
     private CuratorFramework zookkeeper;
     private BookKeeper bookKeeper;
-    private LogManagerFactory logManagerFactory;
-    private Proxy proxy;
+    private LoggerFactory loggerFactory;
+    private Ambassador ambassador;
 
     public static void main(String[] args) {
         var starter = new Starter();
         try {
-            starter.start(Config.getServerPort());
+            starter.start();
         } catch (Exception e) {
-            e.printStackTrace();
+            log.debug("Unable to start logger", e);
         }
     }
 
-    private void start(int port) throws Exception {
+    private void start() throws Exception {
         zookkeeper = getZkClient();
         bookKeeper = getBkClient();
-        logManagerFactory = getLogFactory();
-        proxy = getProxy();
-        proxy.start(port);
+        loggerFactory = getLogFactory();
+        ambassador = getProxy();
+        ambassador.initialize();
     }
 
     private CuratorFramework getZkClient() {
@@ -55,11 +57,11 @@ public class Starter {
 
     }
 
-    private LogManagerFactory getLogFactory() {
-        return new BookKeeperLogManagerFactory(zookkeeper, bookKeeper);
+    private LoggerFactory getLogFactory() {
+        return new BookKeeperLoggerFactory(zookkeeper, bookKeeper);
     }
 
-    private Proxy getProxy() {
-        return new Proxy(logManagerFactory);
+    private Ambassador getProxy() {
+        return new Ambassador(loggerFactory);
     }
 }
