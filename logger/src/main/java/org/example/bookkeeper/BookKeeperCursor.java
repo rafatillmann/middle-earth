@@ -24,16 +24,18 @@ public class BookKeeperCursor implements Cursor {
 
     // TODO - Add lastEntryId to zookeeper
     private long lastReadEntryId = -1;
+    private Socket serverSocket;
 
-    public BookKeeperCursor(LogManager logManager, String name, URI uri) {
+    public BookKeeperCursor(LogManager logManager, String name, URI uri) throws LoggerException {
         this.logManager = logManager;
         this.name = name;
         this.uri = uri;
+        this.serverSocket = socket();
     }
 
     @Override
     public void notifyCursor(long toEntryId) throws LoggerException {
-        try (Socket serverSocket = getSocket()) {
+        try {
             PrintWriter serverOut = new PrintWriter(serverSocket.getOutputStream(), true);
             BufferedReader serverIn = new BufferedReader(new InputStreamReader(serverSocket.getInputStream()));
 
@@ -55,7 +57,7 @@ public class BookKeeperCursor implements Cursor {
         }
     }
 
-    public Socket getSocket() throws LoggerException {
+    public Socket socket() throws LoggerException {
         try {
             return new Socket(uri.getHost(), uri.getPort());
         } catch (IOException e) {

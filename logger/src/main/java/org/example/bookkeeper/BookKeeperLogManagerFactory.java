@@ -30,7 +30,7 @@ public class BookKeeperLogManagerFactory implements LogManagerFactory {
         return bookkeeperLog;
     }
 
-    private Set<Cursor> getCursors(LogManager logManager) {
+    private Set<Cursor> getCursors(LogManager logManager) throws LoggerException {
         Set<Cursor> cursors = new HashSet<>();
         for (Map.Entry<String, URI> entry : Config.getReplicaInfo().entrySet()) {
             cursors.add(new BookKeeperCursor(logManager, entry.getKey(), entry.getValue()));
