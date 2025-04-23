@@ -19,15 +19,16 @@ public class ACursor implements Cursor {
     private final URI uri;
     private final Reader reader;
     private final Ambassador ambassador;
-
-    private long lastReadEntryId = -1;
-    private Socket socket;
+    //private final AtomicLong lastReadEntryId;
+    private final Socket socket;
+    private long lastReadEntryId;
 
     public ACursor(URI uri, Ambassador ambassador, Reader reader) throws LoggerException {
         this.uri = uri;
         this.reader = reader;
         this.ambassador = ambassador;
-        this.socket = socket();
+        this.lastReadEntryId = -1;
+        this.socket = getSocket();
     }
 
     @Override
@@ -36,26 +37,31 @@ public class ACursor implements Cursor {
             PrintWriter serverOut = new PrintWriter(socket.getOutputStream(), true);
             BufferedReader serverIn = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 
-            var fromEntryId = lastReadEntryId == -1 ? 0 : lastReadEntryId + 1;
+            // TODO - Verify if is enough AtomicLong for lastReadEntryId
+            if (lastReadEntryId > toEntryId) {
+                // Another thread already read this entries
+                return;
+            }
+
+            var fromEntryId = ++lastReadEntryId;
             for (Entry entry : reader.read(fromEntryId, toEntryId)) {
                 serverOut.println(new String(entry.getPayload(), UTF_8));
-                lastReadEntryId = entry.getEntryId();
-
                 var reply = serverIn.readLine();
 
-                var clientSocket = ambassador.getClientToReply(lastReadEntryId);
-
+                // TODO - Analyse whether Cursor needs to be responsible for this
+                var clientSocket = ambassador.getClientToReply(entry.getEntryId());
                 if (clientSocket != null) {
                     PrintWriter clientOut = new PrintWriter(clientSocket.getOutputStream(), true);
                     clientOut.println(reply);
                 }
             }
+            lastReadEntryId = toEntryId;
         } catch (IOException e) {
             throw new LoggerException("Unable to send entries to server", e);
         }
     }
 
-    public Socket socket() throws LoggerException {
+    public Socket getSocket() throws LoggerException {
         try {
             return new Socket(uri.getHost(), uri.getPort());
         } catch (IOException e) {

@@ -14,7 +14,7 @@ public class Client {
     private static final ObjectMapper objectMapper = new ObjectMapper();
 
     public static void main(String[] args) {
-        int numberOfThreads = 10;
+        int numberOfThreads = 20;
         int numberOfRequests = 10;
         createThreads(numberOfThreads, numberOfRequests);
     }
@@ -41,7 +41,7 @@ public class Client {
                 String jsonResponse = in.readLine();
                 System.out.println("Thread " + Thread.currentThread().getId() + " received JSON from server: " + jsonResponse);
 
-                Thread.sleep(400);
+                Thread.sleep(150);
             }
         } catch (IOException | InterruptedException e) {
             e.printStackTrace();
