@@ -14,25 +14,26 @@ public class Client {
     private static final ObjectMapper objectMapper = new ObjectMapper();
 
     public static void main(String[] args) {
-        int numberOfThreads = 20;
-        int numberOfRequests = 10;
-        createThreads(numberOfThreads, numberOfRequests);
+        int numberOfThreads = Integer.parseInt(args[0]);
+        int numberOfRequests = Integer.parseInt(args[1]);
+        String op = args[2];
+        createThreads(numberOfThreads, numberOfRequests, op);
     }
 
-    private static void createThreads(int numberOfThreads, int numberOfRequests) {
+    private static void createThreads(int numberOfThreads, int numberOfRequests, String op) {
         for (int i = 0; i < numberOfThreads; i++) {
-            new Thread(() -> runClientTask(numberOfRequests)).start();
+            new Thread(() -> runClientRequest(numberOfRequests, op)).start();
         }
     }
 
-    private static void runClientTask(int numberOfRequests) {
+    private static void runClientRequest(int numberOfRequests, String op) {
         try (Socket socket = new Socket(PROXY_HOST, PROXY_PORT);
              BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
              PrintWriter out = new PrintWriter(socket.getOutputStream(), true)) {
 
             for (int j = 0; j < numberOfRequests; j++) {
                 int randomNumber = (int) (Math.random() * 100);
-                Message message = new Message("set", randomNumber, String.valueOf(randomNumber));
+                Message message = new Message(op, randomNumber, String.valueOf(randomNumber));
 
                 String jsonRequest = objectMapper.writeValueAsString(message);
                 System.out.println("Thread " + Thread.currentThread().getId() + " sending JSON to server: " + jsonRequest);

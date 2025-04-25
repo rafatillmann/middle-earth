@@ -40,7 +40,7 @@ public class Server {
                 System.out.println("Received JSON from client: " + jsonRequest);
 
                 Message message = objectMapper.readValue(jsonRequest, Message.class);
-                String response = process(message);
+                String response = processClientRequest(message);
 
                 String jsonResponse = objectMapper.writeValueAsString(response);
                 out.println(jsonResponse);
@@ -50,7 +50,7 @@ public class Server {
         }
     }
 
-    private static String process(Message message) {
+    private static String processClientRequest(Message message) {
         String operation = message.operation();
         int key = message.key();
         String value = message.value();

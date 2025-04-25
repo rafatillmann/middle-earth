@@ -20,7 +20,6 @@ import java.util.stream.Collectors;
 public class Ambassador {
 
     private final LoggerFactory loggerFactory;
-
     private Logger logger;
     private Set<Cursor> cursors;
 
@@ -46,7 +45,7 @@ public class Ambassador {
 
     private void start() throws IOException {
         try (ServerSocket proxyServerSocket = new ServerSocket(Config.getServerPort());) {
-            log.info("Proxy server listening on port " + Config.getServerPort());
+            log.info("Server listening on port " + Config.getServerPort());
 
             while (true) {
                 Socket clientSocket = proxyServerSocket.accept();
