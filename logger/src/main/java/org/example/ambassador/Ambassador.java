@@ -24,7 +24,7 @@ public class Ambassador {
     private final Map<Long, Socket> clientsToReply = new ConcurrentHashMap<>();
     private Logger logger;
     private Set<Cursor> cursors;
-    
+
     public Ambassador(LoggerFactory loggerFactory) {
         this.loggerFactory = loggerFactory;
     }
@@ -33,10 +33,6 @@ public class Ambassador {
         logger = loggerFactory.open(Config.getLogId());
         cursors = getCursors(logger);
         start();
-    }
-
-    public void addClientToReply(long entryId, Socket socket) {
-        clientsToReply.put(entryId, socket);
     }
 
     public Socket getClientToReply(long entryId) {
@@ -55,8 +51,7 @@ public class Ambassador {
     }
 
     private void handleClient(Socket clientSocket) {
-        try {
-            BufferedReader clientIn = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+        try (BufferedReader clientIn = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()))) {
             String request;
             while ((request = clientIn.readLine()) != null) {
                 logger.write(request.getBytes(), entryId -> notifyAddEntry(entryId, clientSocket));
@@ -69,7 +64,7 @@ public class Ambassador {
     private void notifyAddEntry(Long entryId, Socket clientSocket) {
         for (Cursor cursor : cursors) {
             try {
-                addClientToReply(entryId, clientSocket);
+                clientsToReply.put(entryId, clientSocket);
                 cursor.entryAvailable(entryId);
             } catch (LoggerException e) {
                 log.warn("Unable to notify cursors", e);

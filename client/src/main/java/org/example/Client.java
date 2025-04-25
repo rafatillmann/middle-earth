@@ -10,7 +10,7 @@ import java.net.Socket;
 
 public class Client {
     private static final String PROXY_HOST = "localhost";
-    private static final int PROXY_PORT = 5000;
+    private static final int PROXY_PORT = 6000;
     private static final ObjectMapper objectMapper = new ObjectMapper();
 
     public static void main(String[] args) {
@@ -46,7 +46,7 @@ public class Client {
                 Thread.sleep(takeInTime);
             }
         } catch (IOException | InterruptedException e) {
-            e.printStackTrace();
+            Thread.currentThread().interrupt();
         }
     }
 }
