@@ -1,5 +1,6 @@
 package org.example.ambassador;
 
+import lombok.extern.slf4j.Slf4j;
 import org.example.exception.LoggerException;
 import org.example.interfaces.Cursor;
 import org.example.interfaces.Entry;
@@ -11,23 +12,24 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
 import java.net.URI;
+import java.util.concurrent.atomic.AtomicLong;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
+@Slf4j
 public class ACursor implements Cursor {
 
     private final URI uri;
     private final Reader reader;
     private final Ambassador ambassador;
-    //private final AtomicLong lastReadEntryId;
+    private final AtomicLong lastReadEntryId;
     private final Socket socket;
-    private long lastReadEntryId;
 
     public ACursor(URI uri, Ambassador ambassador, Reader reader) throws LoggerException {
         this.uri = uri;
         this.reader = reader;
         this.ambassador = ambassador;
-        this.lastReadEntryId = -1;
+        this.lastReadEntryId = new AtomicLong(-1);
         this.socket = getSocket();
     }
 
@@ -36,13 +38,11 @@ public class ACursor implements Cursor {
         try {
             BufferedReader serverIn = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             PrintWriter serverOut = new PrintWriter(socket.getOutputStream(), true);
-            // TODO - Verify if is enough AtomicLong for lastReadEntryId
-            if (lastReadEntryId > toEntryId) {
+            if (lastReadEntryId.get() > toEntryId) {
                 // Another thread already read this entries
                 return;
             }
-
-            var fromEntryId = ++lastReadEntryId;
+            var fromEntryId = lastReadEntryId.incrementAndGet();
             for (Entry entry : reader.read(fromEntryId, toEntryId)) {
                 serverOut.println(new String(entry.getPayload(), UTF_8));
                 var reply = serverIn.readLine();
@@ -54,7 +54,7 @@ public class ACursor implements Cursor {
                     clientOut.println(reply);
                 }
             }
-            lastReadEntryId = toEntryId;
+            lastReadEntryId.set(toEntryId);
         } catch (IOException e) {
             throw new LoggerException("Unable to send entries to server", e);
         }
