@@ -52,7 +52,7 @@ public class BookKeeperLogger implements Logger {
 
     @Override
     public Reader getReader() throws LoggerException {
-        return new BookKeeperReader(this.logId, this.bookKeeper, writer.getLedgerMetadata());
+        return new BookKeeperReader(logId, bookKeeper, writer.getLedgerMetadata());
     }
 
     private WriteHandle writer() throws LoggerException {
@@ -62,7 +62,7 @@ public class BookKeeperLogger implements Logger {
                     .withWriteQuorumSize(2)
                     .withAckQuorumSize(2)
                     .withPassword("middle-earth".getBytes())
-                    .withCustomMetadata(createLedgerCustomMetadata(this.logId))
+                    .withCustomMetadata(createLedgerCustomMetadata(logId))
                     .execute()
                     .get();
         } catch (ExecutionException | InterruptedException e) {

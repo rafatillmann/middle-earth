@@ -5,13 +5,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 
 public class Server {
-    private static final Map<Integer, String> store = new HashMap<>();
+    private static final Map<Integer, String> store = new ConcurrentHashMap<>();
     private static final ObjectMapper objectMapper = new ObjectMapper();
     private static final AtomicInteger counter = new AtomicInteger(0);
 

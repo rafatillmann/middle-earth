@@ -12,6 +12,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
@@ -20,11 +21,10 @@ import java.util.stream.Collectors;
 public class Ambassador {
 
     private final LoggerFactory loggerFactory;
+    private final Map<Long, Socket> clientsToReply = new ConcurrentHashMap<>();
     private Logger logger;
     private Set<Cursor> cursors;
-
-    private final ConcurrentHashMap<Long, Socket> clientsToReply = new ConcurrentHashMap<>();
-
+    
     public Ambassador(LoggerFactory loggerFactory) {
         this.loggerFactory = loggerFactory;
     }
