@@ -10,23 +10,24 @@ import java.net.Socket;
 
 public class Client {
     private static final String PROXY_HOST = "localhost";
-    private static final int PROXY_PORT = 6000;
+    private static final int PROXY_PORT = 5000;
     private static final ObjectMapper objectMapper = new ObjectMapper();
 
     public static void main(String[] args) {
         int numberOfThreads = Integer.parseInt(args[0]);
         int numberOfRequests = Integer.parseInt(args[1]);
         String op = args[2];
-        createThreads(numberOfThreads, numberOfRequests, op);
+        int takeInTime = Integer.parseInt(args[3]);
+        createThreads(numberOfThreads, numberOfRequests, op, takeInTime);
     }
 
-    private static void createThreads(int numberOfThreads, int numberOfRequests, String op) {
+    private static void createThreads(int numberOfThreads, int numberOfRequests, String op, int takeInTime) {
         for (int i = 0; i < numberOfThreads; i++) {
-            new Thread(() -> runClientRequest(numberOfRequests, op)).start();
+            new Thread(() -> runClientRequest(numberOfRequests, op, takeInTime)).start();
         }
     }
 
-    private static void runClientRequest(int numberOfRequests, String op) {
+    private static void runClientRequest(int numberOfRequests, String op, int takeInTime) {
         try (Socket socket = new Socket(PROXY_HOST, PROXY_PORT);
              BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
              PrintWriter out = new PrintWriter(socket.getOutputStream(), true)) {
@@ -42,7 +43,7 @@ public class Client {
                 String jsonResponse = in.readLine();
                 System.out.println("Thread " + Thread.currentThread().getId() + " received JSON from server: " + jsonResponse);
 
-                Thread.sleep(150);
+                Thread.sleep(takeInTime);
             }
         } catch (IOException | InterruptedException e) {
             e.printStackTrace();

@@ -33,10 +33,8 @@ public class ACursor implements Cursor {
 
     @Override
     public synchronized void entryAvailable(long toEntryId) throws LoggerException {
-        try {
-            PrintWriter serverOut = new PrintWriter(socket.getOutputStream(), true);
-            BufferedReader serverIn = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-
+        try (BufferedReader serverIn = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+             PrintWriter serverOut = new PrintWriter(socket.getOutputStream(), true);) {
             // TODO - Verify if is enough AtomicLong for lastReadEntryId
             if (lastReadEntryId > toEntryId) {
                 // Another thread already read this entries

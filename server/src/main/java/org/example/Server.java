@@ -2,25 +2,27 @@ package org.example;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
+import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
 
 public class Server {
     private static final Map<Integer, String> store = new HashMap<>();
     private static final ObjectMapper objectMapper = new ObjectMapper();
+    private static final AtomicInteger counter = new AtomicInteger(0);
 
     public static void main(String[] args) {
         int port = Integer.parseInt(args[0]);
 
         try (ServerSocket serverSocket = new ServerSocket(port)) {
             System.out.println("Server listening on port " + port);
+
+            // Statistics
+            new Thread(Server::stats).start();
 
             while (true) {
                 Socket clientSocket = serverSocket.accept();
@@ -32,18 +34,19 @@ public class Server {
     }
 
     private static void handleClient(Socket clientSocket) {
-        try (BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
-             PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true)) {
+        try (BufferedReader serverIn = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+             PrintWriter serverOut = new PrintWriter(clientSocket.getOutputStream(), true)) {
 
-            String jsonRequest;
-            while ((jsonRequest = in.readLine()) != null) {
-                System.out.println("Received JSON from client: " + jsonRequest);
+            String request;
+            while ((request = serverIn.readLine()) != null) {
+                System.out.println("Received JSON from client: " + request);
 
-                Message message = objectMapper.readValue(jsonRequest, Message.class);
-                String response = processClientRequest(message);
+                var message = objectMapper.readValue(request, Message.class);
+                var actualValueCounter = counter.getAndIncrement();
+                var response = processClientRequest(message);
 
-                String jsonResponse = objectMapper.writeValueAsString(response);
-                out.println(jsonResponse);
+                var jsonResponse = objectMapper.writeValueAsString(response);
+                serverOut.println(jsonResponse);
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -54,7 +57,6 @@ public class Server {
         String operation = message.operation();
         int key = message.key();
         String value = message.value();
-
         switch (operation) {
             case "get":
                 return store.getOrDefault(key, null);
@@ -68,6 +70,20 @@ public class Server {
                 return store.remove(key) != null ? "OK" : "Key not found";
             default:
                 return "Invalid request";
+        }
+    }
+
+    private static void stats() {
+        try (FileWriter writer = new FileWriter("throughput.txt", true)) {
+            while (true) {
+                Thread.sleep(1000);
+                var actualValueCounter = counter.getAndSet(0);
+                var log = String.format("Throughput (/s): %d, Time: %d \n", actualValueCounter, System.currentTimeMillis());
+                writer.write(log);
+                writer.flush();
+            }
+        } catch (InterruptedException | IOException e) {
+            Thread.currentThread().interrupt();
         }
     }
 }
