@@ -1,4 +1,4 @@
-package org.example.ambassador;
+package org.example.gateway;
 
 import lombok.extern.slf4j.Slf4j;
 import org.example.exception.LoggerException;
@@ -17,18 +17,18 @@ import java.util.concurrent.atomic.AtomicLong;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 @Slf4j
-public class ACursor implements Cursor {
+public class SCursor implements Cursor {
 
     private final URI uri;
     private final Reader reader;
-    private final Ambassador ambassador;
+    private final SGateway gateway;
     private final AtomicLong lastReadEntryId;
     private final Socket socket;
 
-    public ACursor(URI uri, Ambassador ambassador, Reader reader) throws LoggerException {
+    public SCursor(URI uri, SGateway SGateway, Reader reader) throws LoggerException {
         this.uri = uri;
         this.reader = reader;
-        this.ambassador = ambassador;
+        this.gateway = SGateway;
         this.lastReadEntryId = new AtomicLong(-1);
         this.socket = getSocket();
     }
@@ -38,6 +38,7 @@ public class ACursor implements Cursor {
         try {
             BufferedReader serverIn = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             PrintWriter serverOut = new PrintWriter(socket.getOutputStream(), true);
+            System.out.println(this.hashCode() + "-" + Thread.currentThread().getId());
             if (lastReadEntryId.get() > toEntryId) {
                 // Another thread already read this entries
                 return;
@@ -48,7 +49,7 @@ public class ACursor implements Cursor {
                 var reply = serverIn.readLine();
 
                 // TODO - Analyse whether Cursor needs to be responsible for this
-                var clientSocket = ambassador.getClientToReply(entry.getEntryId());
+                var clientSocket = gateway.getClientToReply(entry.getEntryId());
                 if (clientSocket != null) {
                     PrintWriter clientOut = new PrintWriter(clientSocket.getOutputStream(), true);
                     clientOut.println(reply);

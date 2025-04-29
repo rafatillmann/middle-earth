@@ -1,9 +1,10 @@
-package org.example.ambassador;
+package org.example.gateway;
 
 import lombok.extern.slf4j.Slf4j;
 import org.example.config.Config;
 import org.example.exception.LoggerException;
 import org.example.interfaces.Cursor;
+import org.example.interfaces.Gateway;
 import org.example.interfaces.Logger;
 import org.example.interfaces.LoggerFactory;
 
@@ -18,28 +19,22 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 @Slf4j
-public class Ambassador {
+public class SGateway implements Gateway {
 
     private final LoggerFactory loggerFactory;
     private final Map<Long, Socket> clientsToReply = new ConcurrentHashMap<>();
     private Logger logger;
     private Set<Cursor> cursors;
 
-    public Ambassador(LoggerFactory loggerFactory) {
+    public SGateway(LoggerFactory loggerFactory) {
         this.loggerFactory = loggerFactory;
     }
 
-    public void initialize() throws LoggerException, IOException {
+    @Override
+    public void initialize() throws LoggerException {
         logger = loggerFactory.open(Config.getLogId());
         cursors = getCursors(logger);
-        start();
-    }
 
-    public Socket getClientToReply(long entryId) {
-        return clientsToReply.remove(entryId);
-    }
-
-    private void start() throws IOException {
         try (ServerSocket proxyServerSocket = new ServerSocket(Config.getServerPort());) {
             log.info("Server listening on port " + Config.getServerPort());
 
@@ -47,7 +42,13 @@ public class Ambassador {
                 Socket clientSocket = proxyServerSocket.accept();
                 new Thread(() -> handleClient(clientSocket)).start();
             }
+        } catch (IOException e) {
+            throw new LoggerException("Unable to start server", e);
         }
+    }
+
+    public Socket getClientToReply(long entryId) {
+        return clientsToReply.remove(entryId);
     }
 
     private void handleClient(Socket clientSocket) {
@@ -76,7 +77,7 @@ public class Ambassador {
         return Config.getReplicaInfo().values().stream()
                 .map(uri -> {
                     try {
-                        return new ACursor(uri, this, logger.getReader());
+                        return new SCursor(uri, this, logger.getReader());
                     } catch (LoggerException e) {
                         throw new RuntimeException(e);
                     }
