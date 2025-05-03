@@ -38,7 +38,6 @@ public class SCursor implements Cursor {
         try {
             BufferedReader serverIn = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             PrintWriter serverOut = new PrintWriter(socket.getOutputStream(), true);
-            System.out.println(this.hashCode() + "-" + Thread.currentThread().getId());
             if (lastReadEntryId.get() > toEntryId) {
                 // Another thread already read this entries
                 return;

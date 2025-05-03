@@ -55,17 +55,17 @@ public class SGateway implements Gateway {
         try (BufferedReader clientIn = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()))) {
             String request;
             while ((request = clientIn.readLine()) != null) {
-                logger.write(request.getBytes(), entryId -> notifyAddEntry(entryId, clientSocket));
+                logger.write(request.getBytes(), entryId -> callbackAddEntry(entryId, clientSocket));
             }
         } catch (Exception e) {
             log.error("Unable to process client request", e);
         }
     }
 
-    private void notifyAddEntry(Long entryId, Socket clientSocket) {
+    private void callbackAddEntry(Long entryId, Socket clientSocket) {
+        clientsToReply.put(entryId, clientSocket);
         for (Cursor cursor : cursors) {
             try {
-                clientsToReply.put(entryId, clientSocket);
                 cursor.entryAvailable(entryId);
             } catch (LoggerException e) {
                 log.warn("Unable to notify cursors", e);
