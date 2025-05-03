@@ -11,6 +11,7 @@ import org.example.interfaces.LoggerFactory;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.Map;
@@ -49,6 +50,15 @@ public class SGateway implements Gateway {
 
     public Socket getClientToReply(long entryId) {
         return clientsToReply.remove(entryId);
+    }
+
+    public void replyClient(long entryId, String reply) throws IOException {
+        var clientSocket = getClientToReply(entryId);
+
+        if (clientSocket != null) {
+            PrintWriter clientOut = new PrintWriter(clientSocket.getOutputStream(), true);
+            clientOut.println(reply);
+        }
     }
 
     private void handleClient(Socket clientSocket) {

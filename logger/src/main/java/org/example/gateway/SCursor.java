@@ -45,14 +45,7 @@ public class SCursor implements Cursor {
             var fromEntryId = lastReadEntryId.incrementAndGet();
             for (Entry entry : reader.read(fromEntryId, toEntryId)) {
                 serverOut.println(new String(entry.getPayload(), UTF_8));
-                var reply = serverIn.readLine();
-
-                // TODO - Analyse whether Cursor needs to be responsible for this
-                var clientSocket = gateway.getClientToReply(entry.getEntryId());
-                if (clientSocket != null) {
-                    PrintWriter clientOut = new PrintWriter(clientSocket.getOutputStream(), true);
-                    clientOut.println(reply);
-                }
+                gateway.replyClient(entry.getEntryId(), serverIn.readLine());
             }
             lastReadEntryId.set(toEntryId);
         } catch (IOException e) {
