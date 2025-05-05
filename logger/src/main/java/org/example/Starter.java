@@ -9,7 +9,7 @@ import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.ExponentialBackoffRetry;
 import org.example.bookkeeper.BookKeeperLoggerFactory;
 import org.example.config.Config;
-import org.example.gateway.SGateway;
+import org.example.gateway.SocketGateway;
 import org.example.interfaces.Gateway;
 import org.example.interfaces.LoggerFactory;
 
@@ -63,6 +63,6 @@ public class Starter {
     }
 
     private Gateway getGateway() {
-        return new SGateway(loggerFactory);
+        return new SocketGateway(loggerFactory);
     }
 }

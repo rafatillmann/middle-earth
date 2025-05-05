@@ -20,14 +20,14 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 @Slf4j
-public class SGateway implements Gateway {
+public class SocketGateway implements Gateway {
 
     private final LoggerFactory loggerFactory;
     private final Map<Long, Socket> clientsToReply = new ConcurrentHashMap<>();
     private Logger logger;
     private Set<Cursor> cursors;
 
-    public SGateway(LoggerFactory loggerFactory) {
+    public SocketGateway(LoggerFactory loggerFactory) {
         this.loggerFactory = loggerFactory;
     }
 
@@ -87,7 +87,7 @@ public class SGateway implements Gateway {
         return Config.getReplicaInfo().values().stream()
                 .map(uri -> {
                     try {
-                        return new SCursor(uri, this, logger.getReader());
+                        return new SocketCursor(uri, this, logger.getReader());
                     } catch (LoggerException e) {
                         throw new RuntimeException(e);
                     }

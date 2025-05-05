@@ -17,18 +17,18 @@ import java.util.concurrent.atomic.AtomicLong;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 @Slf4j
-public class SCursor implements Cursor {
+public class SocketCursor implements Cursor {
 
     private final URI uri;
     private final Reader reader;
-    private final SGateway gateway;
+    private final SocketGateway gateway;
     private final AtomicLong lastReadEntryId;
     private final Socket socket;
 
-    public SCursor(URI uri, SGateway SGateway, Reader reader) throws LoggerException {
+    public SocketCursor(URI uri, SocketGateway SocketGateway, Reader reader) throws LoggerException {
         this.uri = uri;
         this.reader = reader;
-        this.gateway = SGateway;
+        this.gateway = SocketGateway;
         this.lastReadEntryId = new AtomicLong(-1);
         this.socket = getSocket();
     }
