@@ -78,7 +78,7 @@ public class Server {
             while (true) {
                 Thread.sleep(takeInTime);
                 var actualValueCounter = counter.getAndSet(0);
-                var log = String.format("Throughput (/s): %d, Time: %d \n", actualValueCounter, System.currentTimeMillis());
+                var log = String.format("Throughput (/s): %d, Time: %d \n", actualValueCounter, System.nanoTime());
                 writer.write(log);
                 writer.flush();
             }
