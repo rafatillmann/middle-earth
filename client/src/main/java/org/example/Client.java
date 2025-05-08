@@ -7,19 +7,21 @@ import java.net.Socket;
 import java.util.Random;
 
 public class Client {
-    private static final String PROXY_HOST = "localhost";
-    private static final int PROXY_PORT = 5000;
     private static final int bound = 100;
     private static final ObjectMapper objectMapper = new ObjectMapper();
     private static final Random rand = new Random();
 
     private static FileWriter writer;
+    private static String proxyHost;
+    private static int proxyPort;
 
     public static void main(String[] args) {
-        int numberOfClients = Integer.parseInt(args[0]);
-        int numberOfRequests = Integer.parseInt(args[1]);
-        int thinkTime = Integer.parseInt(args[2]);
-        int percentRead = Integer.parseInt(args[3]);
+        proxyHost = args[0];
+        proxyPort = Integer.parseInt(args[1]);
+        int numberOfClients = Integer.parseInt(args[2]);
+        int numberOfRequests = Integer.parseInt(args[3]);
+        int thinkTime = Integer.parseInt(args[4]);
+        int percentRead = Integer.parseInt(args[5]);
         createThreads(numberOfClients, numberOfRequests, thinkTime, percentRead);
     }
 
@@ -35,7 +37,7 @@ public class Client {
     }
 
     private static void runClientRequest(int numberOfRequests, int thinkTime, int percentRead) {
-        try (Socket socket = new Socket(PROXY_HOST, PROXY_PORT);
+        try (Socket socket = new Socket(proxyHost, proxyPort);
              BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
              PrintWriter out = new PrintWriter(socket.getOutputStream(), true)) {
             for (int j = 0; j < numberOfRequests; j++) {
