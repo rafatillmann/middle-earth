@@ -5,8 +5,8 @@ import org.example.config.Config;
 import org.example.exception.LoggerException;
 import org.example.interfaces.Cursor;
 import org.example.interfaces.Gateway;
-import org.example.interfaces.Logger;
-import org.example.interfaces.LoggerFactory;
+import org.example.interfaces.LogFactory;
+import org.example.interfaces.Writer;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -22,19 +22,19 @@ import java.util.stream.Collectors;
 @Slf4j
 public class SocketGateway implements Gateway {
 
-    private final LoggerFactory loggerFactory;
+    private final LogFactory logFactory;
     private final Map<Long, Socket> clientsToReply = new ConcurrentHashMap<>();
-    private Logger logger;
+    private Writer writer;
     private Set<Cursor> cursors;
 
-    public SocketGateway(LoggerFactory loggerFactory) {
-        this.loggerFactory = loggerFactory;
+    public SocketGateway(LogFactory logFactory) {
+        this.logFactory = logFactory;
     }
 
     @Override
     public void initialize() throws LoggerException {
-        logger = loggerFactory.open(Config.getLogId());
-        cursors = getCursors(logger);
+        writer = logFactory.getWriter(Config.getLogId());
+        cursors = getCursors(writer);
 
         try (ServerSocket proxyServerSocket = new ServerSocket(Config.getServerPort());) {
             log.info("Server listening on port " + Config.getServerPort());
@@ -65,7 +65,7 @@ public class SocketGateway implements Gateway {
         try (BufferedReader clientIn = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()))) {
             String request;
             while ((request = clientIn.readLine()) != null) {
-                logger.write(request.getBytes(), entryId -> callbackAddEntry(entryId, clientSocket));
+                writer.write(request.getBytes(), entryId -> callbackAddEntry(entryId, clientSocket));
             }
         } catch (Exception e) {
             log.error("Unable to process client request", e);
@@ -83,11 +83,11 @@ public class SocketGateway implements Gateway {
         }
     }
 
-    private Set<Cursor> getCursors(Logger logger) {
+    private Set<Cursor> getCursors(Writer writer) {
         return Config.getReplicaInfo().values().stream()
                 .map(uri -> {
                     try {
-                        return new SocketCursor(uri, this, logger.getReader());
+                        return new SocketCursor(uri, this, writer.getReader());
                     } catch (LoggerException e) {
                         throw new RuntimeException(e);
                     }

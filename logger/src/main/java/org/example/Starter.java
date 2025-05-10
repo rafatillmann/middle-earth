@@ -7,18 +7,18 @@ import org.apache.bookkeeper.conf.ClientConfiguration;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.ExponentialBackoffRetry;
-import org.example.bookkeeper.BookKeeperLoggerFactory;
+import org.example.bookkeeper.BookKeeperLogFactory;
 import org.example.config.Config;
 import org.example.gateway.SocketGateway;
 import org.example.interfaces.Gateway;
-import org.example.interfaces.LoggerFactory;
+import org.example.interfaces.LogFactory;
 
 @Slf4j
 public class Starter {
 
     private CuratorFramework zookkeeper;
     private BookKeeper bookKeeper;
-    private LoggerFactory loggerFactory;
+    private LogFactory logFactory;
     private Gateway gateway;
 
     public static void main(String[] args) {
@@ -33,7 +33,7 @@ public class Starter {
     private void start() throws Exception {
         zookkeeper = getZkClient();
         bookKeeper = getBkClient();
-        loggerFactory = getLogFactory();
+        logFactory = getLogFactory();
         gateway = getGateway();
         gateway.initialize();
     }
@@ -58,11 +58,11 @@ public class Starter {
 
     }
 
-    private LoggerFactory getLogFactory() {
-        return new BookKeeperLoggerFactory(zookkeeper, bookKeeper);
+    private LogFactory getLogFactory() {
+        return new BookKeeperLogFactory(zookkeeper, bookKeeper);
     }
 
     private Gateway getGateway() {
-        return new SocketGateway(loggerFactory);
+        return new SocketGateway(logFactory);
     }
 }

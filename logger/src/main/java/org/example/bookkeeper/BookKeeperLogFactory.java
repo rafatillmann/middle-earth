@@ -3,21 +3,21 @@ package org.example.bookkeeper;
 import org.apache.bookkeeper.client.api.BookKeeper;
 import org.apache.curator.framework.CuratorFramework;
 import org.example.exception.LoggerException;
-import org.example.interfaces.Logger;
-import org.example.interfaces.LoggerFactory;
+import org.example.interfaces.LogFactory;
+import org.example.interfaces.Writer;
 
-public class BookKeeperLoggerFactory implements LoggerFactory {
+public class BookKeeperLogFactory implements LogFactory {
 
     private final CuratorFramework zookkeeper;
     private final BookKeeper bookKeeper;
 
-    public BookKeeperLoggerFactory(CuratorFramework zookkeeper, BookKeeper bookKeeper) {
+    public BookKeeperLogFactory(CuratorFramework zookkeeper, BookKeeper bookKeeper) {
         this.zookkeeper = zookkeeper;
         this.bookKeeper = bookKeeper;
     }
 
     @Override
-    public Logger open(long logId) throws LoggerException {
-        return new BookKeeperLogger(logId, bookKeeper);
+    public Writer getWriter(long logId) throws LoggerException {
+        return new BookKeeperWriter(logId, bookKeeper);
     }
 }
