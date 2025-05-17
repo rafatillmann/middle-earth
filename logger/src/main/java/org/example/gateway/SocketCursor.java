@@ -45,7 +45,7 @@ public class SocketCursor implements Cursor {
             var fromEntryId = lastReadEntryId.incrementAndGet();
             for (Entry entry : reader.read(fromEntryId, toEntryId)) {
                 serverOut.println(new String(entry.getPayload(), UTF_8));
-                gateway.replyClient(entry.getEntryId(), serverIn.readLine());
+                gateway.replyToClient(entry.getEntryId(), serverIn.readLine());
             }
             lastReadEntryId.set(toEntryId);
         } catch (IOException e) {

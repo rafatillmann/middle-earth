@@ -52,7 +52,7 @@ public class SocketGateway implements Gateway {
         return clientsToReply.remove(entryId);
     }
 
-    public void replyClient(long entryId, String reply) throws IOException {
+    public void replyToClient(long entryId, String reply) throws IOException {
         var clientSocket = getClientToReply(entryId);
 
         if (clientSocket != null) {
