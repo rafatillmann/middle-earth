@@ -17,12 +17,12 @@ public class Server {
 
     public static void main(String[] args) {
         int port = Integer.parseInt(args[0]);
-        int takeTime = Integer.parseInt(args[1]);
+        int metricTime = Integer.parseInt(args[1]);
 
         try (ServerSocket serverSocket = new ServerSocket(port)) {
             System.out.println("Server listening on port " + port);
             // Metrics
-            new Thread(() -> stats(takeTime)).start();
+            new Thread(() -> stats(metricTime)).start();
 
             while (true) {
                 Socket clientSocket = serverSocket.accept();
@@ -73,12 +73,12 @@ public class Server {
         }
     }
 
-    private static void stats(int takeTime) {
+    private static void stats(int metricTime) {
         try (FileWriter writer = new FileWriter("throughput.txt", true)) {
             while (true) {
-                Thread.sleep(takeTime);
+                Thread.sleep(metricTime);
                 var actualValueCounter = counter.getAndSet(0);
-                var log = String.format("Throughput (/s): %d, Time: %d \n", actualValueCounter, System.nanoTime());
+                var log = String.format("throughput (/s): %d, time: %d \n", actualValueCounter, System.nanoTime());
                 writer.write(log);
                 writer.flush();
             }

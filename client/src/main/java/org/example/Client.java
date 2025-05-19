@@ -7,7 +7,6 @@ import java.net.Socket;
 import java.util.Random;
 
 public class Client {
-    private static final int bound = 100;
     private static final ObjectMapper objectMapper = new ObjectMapper();
     private static final Random rand = new Random();
 
@@ -27,27 +26,31 @@ public class Client {
 
     private static void createThreads(int numberOfThreads, int numberOfRequests, int thinkTime, int percentRead) {
         try {
-            writer = new FileWriter("latency.txt", true);
+            writer = new FileWriter(String.format("%d-latency.txt", numberOfThreads), true);
         } catch (IOException e) {
             Thread.currentThread().interrupt();
         }
         for (int i = 0; i < numberOfThreads; i++) {
-            new Thread(() -> runClientRequest(numberOfRequests, thinkTime, percentRead)).start();
+            new Thread(() -> runClientRequest(numberOfThreads, numberOfRequests, thinkTime, percentRead)).start();
         }
     }
 
-    private static void runClientRequest(int numberOfRequests, int thinkTime, int percentRead) {
+    private static void runClientRequest(int numberOfThreads, int numberOfRequests, int thinkTime, int percentRead) {
         try (Socket socket = new Socket(proxyHost, proxyPort);
              BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
              PrintWriter out = new PrintWriter(socket.getOutputStream(), true)) {
             for (int j = 0; j < numberOfRequests; j++) {
 
                 boolean readOperation = rand.nextInt(100) < percentRead;
-                Message message = new Message(readOperation ? "get" : "set", (int) Thread.currentThread().getId(), readOperation ? null : String.valueOf(j));
+                var op = readOperation ? "get" : "set";
+                var key = rand.nextInt(100000);
+                var value = readOperation ? null : "&".repeat(16);
+
+                Message message = new Message(op, key, value);
 
                 long start = 0;
                 long end = 0;
-                var measureCurrentRequestLatency = rand.nextInt(bound) == 0;
+                var measureCurrentRequestLatency = rand.nextInt(numberOfThreads) == 0;
 
                 String jsonRequest = objectMapper.writeValueAsString(message);
                 System.out.println("Thread " + Thread.currentThread().getId() + " sending JSON to server: " + jsonRequest);
@@ -62,9 +65,7 @@ public class Client {
 
                 if (measureCurrentRequestLatency) {
                     end = System.nanoTime();
-                    var log = String.format("Latency of %s: Start %d, End %d \n", jsonRequest, start, end);
-                    writer.append(log);
-                    writer.flush();
+                    latency(op, start, end);
                 }
 
                 System.out.println("Thread " + Thread.currentThread().getId() + " received JSON from server: " + jsonResponse);
@@ -73,6 +74,17 @@ public class Client {
             }
         } catch (IOException | InterruptedException e) {
             Thread.currentThread().interrupt();
+        }
+    }
+
+    private static synchronized void latency(String operation, long start, long end) {
+        try {
+            var log = String.format("%s operation: start %d, end %d, latency %d\n",
+                    operation, start, end, (end - start));
+            writer.append(log);
+            writer.flush();
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 }
