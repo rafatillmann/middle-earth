@@ -64,7 +64,7 @@ public class Client {
                 var measureCurrentRequestLatency = rand.nextInt(numberOfThreads) == 0;
 
                 String jsonRequest = objectMapper.writeValueAsString(message);
-                System.out.println("Thread " + Thread.currentThread().getId() + " sending JSON to server: " + jsonRequest);
+//                System.out.println("Thread " + Thread.currentThread().getId() + " sending JSON to server: " + jsonRequest);
 
                 if (measureCurrentRequestLatency) {
                     start = System.nanoTime();
@@ -79,7 +79,7 @@ public class Client {
                     latency(op, start, end);
                 }
 
-                System.out.println("Thread " + Thread.currentThread().getId() + " received JSON from server: " + jsonResponse);
+//                System.out.println("Thread " + Thread.currentThread().getId() + " received JSON from server: " + jsonResponse);
 
                 Thread.sleep(thinkTime);
             }

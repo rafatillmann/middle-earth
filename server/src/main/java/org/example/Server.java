@@ -39,7 +39,7 @@ public class Server {
 
             String request;
             while ((request = serverIn.readLine()) != null) {
-                System.out.println("Received JSON from client: " + request);
+//                System.out.println("Received JSON from client: " + request);
 
                 var message = objectMapper.readValue(request, Message.class);
                 var actualValueCounter = counter.getAndIncrement();
