@@ -52,7 +52,7 @@ public class Starter {
     private BookKeeper getBkClient() throws Exception {
         ClientConfiguration config = new ClientConfiguration()
                 .setClientTcpNoDelay(true)
-                .setMetadataServiceUri("zk://localhost:2181/ledgers")
+                .setMetadataServiceUri(String.format("zk://%s/ledgers", Config.getZkUri()))
                 .setEnsemblePlacementPolicy(DefaultEnsemblePlacementPolicy.class);
         return BookKeeper.newBuilder(config).build();
 

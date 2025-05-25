@@ -8,15 +8,13 @@ import org.example.interfaces.Gateway;
 import org.example.interfaces.LogFactory;
 import org.example.interfaces.Writer;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
+import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -26,6 +24,8 @@ public class SocketGateway implements Gateway {
     private final Map<Long, Socket> clientsToReply = new ConcurrentHashMap<>();
     private Writer writer;
     private Set<Cursor> cursors;
+
+    private final AtomicInteger counter = new AtomicInteger(0);
 
     public SocketGateway(LogFactory logFactory) {
         this.logFactory = logFactory;
@@ -37,7 +37,9 @@ public class SocketGateway implements Gateway {
         cursors = getCursors(writer);
 
         try (ServerSocket proxyServerSocket = new ServerSocket(Config.getServerPort());) {
-            log.info("Server listening on port " + Config.getServerPort());
+            log.info("Server listening on port {}", Config.getServerPort());
+
+            new Thread(() -> stats(1000)).start();
 
             while (true) {
                 Socket clientSocket = proxyServerSocket.accept();
@@ -66,6 +68,7 @@ public class SocketGateway implements Gateway {
             String request;
             while ((request = clientIn.readLine()) != null) {
                 writer.write(request.getBytes(), entryId -> callbackAddEntry(entryId, clientSocket));
+                var actualValueCounter = counter.getAndIncrement();
             }
         } catch (Exception e) {
             log.error("Unable to process client request", e);
@@ -93,5 +96,19 @@ public class SocketGateway implements Gateway {
                     }
                 })
                 .collect(Collectors.toSet());
+    }
+
+    private void stats(int metricTime) {
+        try (FileWriter writer = new FileWriter("throughput-logger.txt", true)) {
+            while (true) {
+                Thread.sleep(metricTime);
+                var actualValueCounter = counter.getAndSet(0);
+                var log = String.format("throughput (/s): %d, time: %d \n", actualValueCounter, System.nanoTime());
+                writer.write(log);
+                writer.flush();
+            }
+        } catch (InterruptedException | IOException e) {
+            Thread.currentThread().interrupt();
+        }
     }
 }

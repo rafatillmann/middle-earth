@@ -10,6 +10,8 @@ public class Client {
     private static final ObjectMapper objectMapper = new ObjectMapper();
     private static final Random rand = new Random();
 
+    private static volatile boolean running = true;
+
     private static FileWriter writer;
     private static String proxyHost;
     private static int proxyPort;
@@ -21,6 +23,15 @@ public class Client {
         int numberOfRequests = Integer.parseInt(args[3]);
         int thinkTime = Integer.parseInt(args[4]);
         int percentRead = Integer.parseInt(args[5]);
+
+        new Thread(() -> {
+            try {
+                Thread.sleep(60000);
+            } catch (InterruptedException ignored) {
+            }
+            running = false;
+        }).start();
+
         createThreads(numberOfClients, numberOfRequests, thinkTime, percentRead);
     }
 
@@ -39,7 +50,7 @@ public class Client {
         try (Socket socket = new Socket(proxyHost, proxyPort);
              BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
              PrintWriter out = new PrintWriter(socket.getOutputStream(), true)) {
-            for (int j = 0; j < numberOfRequests; j++) {
+            for (int j = 0; running && j < numberOfRequests; j++) {
 
                 boolean readOperation = rand.nextInt(100) < percentRead;
                 var op = readOperation ? "get" : "set";
