@@ -18,11 +18,12 @@ public class Server {
     public static void main(String[] args) {
         int port = Integer.parseInt(args[0]);
         int metricTime = Integer.parseInt(args[1]);
+        int numberOfClients = Integer.parseInt(args[2]);
 
         try (ServerSocket serverSocket = new ServerSocket(port)) {
             System.out.println("Server listening on port " + port);
             // Metrics
-            new Thread(() -> stats(metricTime)).start();
+            new Thread(() -> stats(metricTime, numberOfClients)).start();
 
             while (true) {
                 Socket clientSocket = serverSocket.accept();
@@ -39,14 +40,14 @@ public class Server {
 
             String request;
             while ((request = serverIn.readLine()) != null) {
-//                System.out.println("Received JSON from client: " + request);
+                System.out.println("Received JSON from client: " + request);
 
-                var message = objectMapper.readValue(request, Message.class);
-                var actualValueCounter = counter.getAndIncrement();
+                Message message = objectMapper.readValue(request, Message.class);
                 var response = processClientRequest(message);
 
                 var jsonResponse = objectMapper.writeValueAsString(response);
                 serverOut.println(jsonResponse);
+                counter.getAndIncrement();
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -73,12 +74,13 @@ public class Server {
         }
     }
 
-    private static void stats(int metricTime) {
-        try (FileWriter writer = new FileWriter("throughput.txt", true)) {
+    private static void stats(int metricTime, int numberOfClients) {
+        try (FileWriter writer = new FileWriter(String.format("%d-throughput.txt", numberOfClients), true)) {
             while (true) {
                 Thread.sleep(metricTime);
                 var actualValueCounter = counter.getAndSet(0);
-                var log = String.format("throughput (/s): %d, time: %d \n", actualValueCounter, System.nanoTime());
+                // Alterar formato do output (CSV)
+                var log = String.format("%d, %d \n", actualValueCounter, System.nanoTime());
                 writer.write(log);
                 writer.flush();
             }

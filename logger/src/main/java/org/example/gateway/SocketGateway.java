@@ -21,7 +21,7 @@ import java.util.stream.Collectors;
 public class SocketGateway implements Gateway {
 
     private final LogFactory logFactory;
-    private final Map<Long, Socket> clientsToReply = new ConcurrentHashMap<>();
+    private final Map<Long, PrintWriter> clientsToReply = new ConcurrentHashMap<>();
     private Writer writer;
     private Set<Cursor> cursors;
 
@@ -50,24 +50,24 @@ public class SocketGateway implements Gateway {
         }
     }
 
-    public Socket getClientToReply(long entryId) {
+    public PrintWriter getClientToReply(long entryId) {
         return clientsToReply.remove(entryId);
     }
 
     public void replyToClient(long entryId, String reply) throws IOException {
-        var clientSocket = getClientToReply(entryId);
-
-        if (clientSocket != null) {
-            PrintWriter clientOut = new PrintWriter(clientSocket.getOutputStream(), true);
-            clientOut.println(reply);
+        var clientOut = getClientToReply(entryId);
+        if (clientOut == null) {
+            return;
         }
+        clientOut.println(reply);
     }
 
     private void handleClient(Socket clientSocket) {
-        try (BufferedReader clientIn = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()))) {
+        try (BufferedReader clientIn = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+             PrintWriter clientOut = new PrintWriter(clientSocket.getOutputStream(), true)) {
             String request;
             while ((request = clientIn.readLine()) != null) {
-                writer.write(request.getBytes(), entryId -> callbackAddEntry(entryId, clientSocket));
+                writer.write(request.getBytes(), entryId -> callbackAddEntry(entryId, clientOut));
                 var actualValueCounter = counter.getAndIncrement();
             }
         } catch (Exception e) {
@@ -75,8 +75,8 @@ public class SocketGateway implements Gateway {
         }
     }
 
-    private void callbackAddEntry(Long entryId, Socket clientSocket) {
-        clientsToReply.put(entryId, clientSocket);
+    private void callbackAddEntry(Long entryId, PrintWriter clientOut) {
+        clientsToReply.put(entryId, clientOut);
         for (Cursor cursor : cursors) {
             try {
                 cursor.entryAvailable(entryId);
@@ -91,7 +91,7 @@ public class SocketGateway implements Gateway {
                 .map(uri -> {
                     try {
                         return new SocketCursor(uri, this, writer.getReader());
-                    } catch (LoggerException e) {
+                    } catch (LoggerException | IOException e) {
                         throw new RuntimeException(e);
                     }
                 })
@@ -99,13 +99,14 @@ public class SocketGateway implements Gateway {
     }
 
     private void stats(int metricTime) {
-        try (FileWriter writer = new FileWriter("throughput-logger.txt", true)) {
+        try (FileWriter writer = new FileWriter("l-throughput.txt", true)) {
             while (true) {
                 Thread.sleep(metricTime);
                 var actualValueCounter = counter.getAndSet(0);
                 var log = String.format("throughput (/s): %d, time: %d \n", actualValueCounter, System.nanoTime());
                 writer.write(log);
                 writer.flush();
+                System.out.println(clientsToReply);
             }
         } catch (InterruptedException | IOException e) {
             Thread.currentThread().interrupt();

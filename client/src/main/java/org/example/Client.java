@@ -23,19 +23,12 @@ public class Client {
         int numberOfRequests = Integer.parseInt(args[3]);
         int thinkTime = Integer.parseInt(args[4]);
         int percentRead = Integer.parseInt(args[5]);
+        int testTime = Integer.parseInt(args[6]);
 
-        new Thread(() -> {
-            try {
-                Thread.sleep(60000);
-            } catch (InterruptedException ignored) {
-            }
-            running = false;
-        }).start();
-
-        createThreads(numberOfClients, numberOfRequests, thinkTime, percentRead);
+        createThreads(numberOfClients, numberOfRequests, thinkTime, percentRead, testTime);
     }
 
-    private static void createThreads(int numberOfThreads, int numberOfRequests, int thinkTime, int percentRead) {
+    private static void createThreads(int numberOfThreads, int numberOfRequests, int thinkTime, int percentRead, int testTime) {
         try {
             writer = new FileWriter(String.format("%d-latency.txt", numberOfThreads), true);
         } catch (IOException e) {
@@ -44,6 +37,15 @@ public class Client {
         for (int i = 0; i < numberOfThreads; i++) {
             new Thread(() -> runClientRequest(numberOfThreads, numberOfRequests, thinkTime, percentRead)).start();
         }
+
+        new Thread(() -> {
+            try {
+                Thread.sleep(testTime);
+            } catch (InterruptedException ignored) {
+                Thread.currentThread().interrupt();
+            }
+            running = false;
+        }).start();
     }
 
     private static void runClientRequest(int numberOfThreads, int numberOfRequests, int thinkTime, int percentRead) {
@@ -52,10 +54,11 @@ public class Client {
              PrintWriter out = new PrintWriter(socket.getOutputStream(), true)) {
             for (int j = 0; running && j < numberOfRequests; j++) {
 
+                // Declarar os objetos anteriormente
                 boolean readOperation = rand.nextInt(100) < percentRead;
                 var op = readOperation ? "get" : "set";
-                var key = rand.nextInt(100000);
-                var value = readOperation ? null : "&".repeat(16);
+                var key = rand.nextInt(100000); // Adicionar um valor maior de chaves distintas em outros testes
+                var value = readOperation ? null : "&".repeat(16); // Parametrizar (4, 1024, 4096)
 
                 Message message = new Message(op, key, value);
 
@@ -66,7 +69,7 @@ public class Client {
                 String jsonRequest = objectMapper.writeValueAsString(message);
 //                System.out.println("Thread " + Thread.currentThread().getId() + " sending JSON to server: " + jsonRequest);
 
-                if (measureCurrentRequestLatency) {
+                if (measureCurrentRequestLatency) { //Separar em dois blocos medir e não medir
                     start = System.nanoTime();
                 }
 

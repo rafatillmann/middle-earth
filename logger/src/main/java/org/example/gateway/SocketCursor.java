@@ -24,20 +24,22 @@ public class SocketCursor implements Cursor {
     private final SocketGateway gateway;
     private final AtomicLong lastReadEntryId;
     private final Socket socket;
+    private final BufferedReader serverIn;
+    private final PrintWriter serverOut;
 
-    public SocketCursor(URI uri, SocketGateway SocketGateway, Reader reader) throws LoggerException {
+    public SocketCursor(URI uri, SocketGateway SocketGateway, Reader reader) throws LoggerException, IOException {
         this.uri = uri;
         this.reader = reader;
         this.gateway = SocketGateway;
         this.lastReadEntryId = new AtomicLong(-1);
         this.socket = getSocket();
+        this.serverIn = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+        this.serverOut = new PrintWriter(socket.getOutputStream(), true);
     }
 
     @Override
     public synchronized void entryAvailable(long toEntryId) throws LoggerException {
         try {
-            BufferedReader serverIn = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-            PrintWriter serverOut = new PrintWriter(socket.getOutputStream(), true);
             if (lastReadEntryId.get() > toEntryId) {
                 // Another thread already read this entries
                 return;
