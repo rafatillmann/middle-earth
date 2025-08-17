@@ -38,14 +38,13 @@ public class Server {
         try (BufferedReader serverIn = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
              PrintWriter serverOut = new PrintWriter(clientSocket.getOutputStream(), true)) {
 
-            String request;
+            String request, response, jsonResponse;
+            Message message;
             while ((request = serverIn.readLine()) != null) {
-                System.out.println("Received JSON from client: " + request);
-
-                Message message = objectMapper.readValue(request, Message.class);
-                var response = processClientRequest(message);
-
-                var jsonResponse = objectMapper.writeValueAsString(response);
+                //System.out.println("Received JSON from client: " + request);
+                message = objectMapper.readValue(request, Message.class);
+                response = processClientRequest(message);
+                jsonResponse = objectMapper.writeValueAsString(response);
                 serverOut.println(jsonResponse);
                 counter.getAndIncrement();
             }
@@ -76,11 +75,13 @@ public class Server {
 
     private static void stats(int metricTime, int numberOfClients) {
         try (FileWriter writer = new FileWriter(String.format("%d-throughput.txt", numberOfClients), true)) {
+            String log;
+            int actualValueCounter;
             while (true) {
                 Thread.sleep(metricTime);
-                var actualValueCounter = counter.getAndSet(0);
+                actualValueCounter = counter.getAndSet(0);
                 // Alterar formato do output (CSV)
-                var log = String.format("%d, %d \n", actualValueCounter, System.nanoTime());
+                log = String.format("%d, %d \n", actualValueCounter, System.nanoTime());
                 writer.write(log);
                 writer.flush();
             }

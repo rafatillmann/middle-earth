@@ -24,18 +24,21 @@ public class Client {
         int thinkTime = Integer.parseInt(args[4]);
         int percentRead = Integer.parseInt(args[5]);
         int testTime = Integer.parseInt(args[6]);
+        int valueSize = Integer.parseInt(args[6]);
 
-        createThreads(numberOfClients, numberOfRequests, thinkTime, percentRead, testTime);
+        createThreads(numberOfClients, numberOfRequests, thinkTime, percentRead, testTime, valueSize);
     }
 
-    private static void createThreads(int numberOfThreads, int numberOfRequests, int thinkTime, int percentRead, int testTime) {
+    private static void createThreads(int numberOfThreads, int numberOfRequests, int thinkTime, int percentRead, int testTime, int valueSize) {
         try {
             writer = new FileWriter(String.format("%d-latency.txt", numberOfThreads), true);
         } catch (IOException e) {
             Thread.currentThread().interrupt();
         }
-        for (int i = 0; i < numberOfThreads; i++) {
-            new Thread(() -> runClientRequest(numberOfThreads, numberOfRequests, thinkTime, percentRead)).start();
+
+        new Thread(() -> runClientRequest(true, numberOfRequests, thinkTime, percentRead, valueSize)).start();
+        for (int i = 0; i < numberOfThreads - 1; i++) {
+            new Thread(() -> runClientRequest(false, numberOfRequests, thinkTime, percentRead, valueSize)).start();
         }
 
         new Thread(() -> {
@@ -48,42 +51,40 @@ public class Client {
         }).start();
     }
 
-    private static void runClientRequest(int numberOfThreads, int numberOfRequests, int thinkTime, int percentRead) {
+    private static void runClientRequest(boolean threadWillMeasureLatency, int numberOfRequests, int thinkTime, int percentRead, int valueSize) {
         try (Socket socket = new Socket(proxyHost, proxyPort);
              BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
              PrintWriter out = new PrintWriter(socket.getOutputStream(), true)) {
+
+            boolean readOperation;
+            String op, value, jsonRequest;
+            int key;
+            Message message;
+            long start, end;
+            boolean measureCurrentRequestLatency;
             for (int j = 0; running && j < numberOfRequests; j++) {
+                readOperation = rand.nextInt(100) < percentRead;
+                op = readOperation ? "get" : "set";
+                key = rand.nextInt(100000);
+                value = readOperation ? null : "M".repeat(valueSize); // Parametrizar (4, 1024, 4096)
 
-                // Declarar os objetos anteriormente
-                boolean readOperation = rand.nextInt(100) < percentRead;
-                var op = readOperation ? "get" : "set";
-                var key = rand.nextInt(100000); // Adicionar um valor maior de chaves distintas em outros testes
-                var value = readOperation ? null : "&".repeat(16); // Parametrizar (4, 1024, 4096)
-
-                Message message = new Message(op, key, value);
-
-                long start = 0;
-                long end = 0;
-                var measureCurrentRequestLatency = rand.nextInt(numberOfThreads) == 0;
-
-                String jsonRequest = objectMapper.writeValueAsString(message);
+                message = new Message(op, key, value);
+                jsonRequest = objectMapper.writeValueAsString(message);
 //                System.out.println("Thread " + Thread.currentThread().getId() + " sending JSON to server: " + jsonRequest);
 
-                if (measureCurrentRequestLatency) { //Separar em dois blocos medir e não medir
-                    start = System.nanoTime();
+                if (threadWillMeasureLatency) {
+                    measureCurrentRequestLatency = rand.nextInt(numberOfRequests) == 0;
+                    if (measureCurrentRequestLatency) {
+                        start = System.nanoTime();
+                        out.println(jsonRequest);
+                        in.readLine();
+                        end = System.nanoTime();
+                        latency(op, start, end);
+                    }
+                } else {
+                    out.println(jsonRequest);
+                    in.readLine();
                 }
-
-                out.println(jsonRequest);
-
-                String jsonResponse = in.readLine();
-
-                if (measureCurrentRequestLatency) {
-                    end = System.nanoTime();
-                    latency(op, start, end);
-                }
-
-//                System.out.println("Thread " + Thread.currentThread().getId() + " received JSON from server: " + jsonResponse);
-
                 Thread.sleep(thinkTime);
             }
         } catch (IOException | InterruptedException e) {
@@ -91,7 +92,7 @@ public class Client {
         }
     }
 
-    private static synchronized void latency(String operation, long start, long end) {
+    private static void latency(String operation, long start, long end) {
         try {
             var log = String.format("%s operation: start %d, end %d, latency %d\n",
                     operation, start, end, (end - start));
