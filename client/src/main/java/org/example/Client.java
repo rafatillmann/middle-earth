@@ -31,7 +31,7 @@ public class Client {
 
     private static void createThreads(int numberOfThreads, int numberOfRequests, int thinkTime, int percentRead, int testTime, int valueSize) {
         try {
-            writer = new FileWriter(String.format("%d-latency.txt", numberOfThreads), true);
+            writer = new FileWriter(String.format("%d-latency.csv", numberOfThreads), true);
         } catch (IOException e) {
             Thread.currentThread().interrupt();
         }
@@ -66,11 +66,10 @@ public class Client {
                 readOperation = rand.nextInt(100) < percentRead;
                 op = readOperation ? "get" : "set";
                 key = rand.nextInt(100000);
-                value = readOperation ? null : "M".repeat(valueSize); // Parametrizar (4, 1024, 4096)
+                value = readOperation ? null : "S".repeat(valueSize); // Parametrizar (4, 1024, 4096)
 
                 message = new Message(op, key, value);
                 jsonRequest = objectMapper.writeValueAsString(message);
-//                System.out.println("Thread " + Thread.currentThread().getId() + " sending JSON to server: " + jsonRequest);
 
                 if (threadWillMeasureLatency) {
                     measureCurrentRequestLatency = rand.nextInt(numberOfRequests) == 0;
@@ -94,7 +93,7 @@ public class Client {
 
     private static void latency(String operation, long start, long end) {
         try {
-            var log = String.format("%s operation: start %d, end %d, latency %d\n",
+            var log = String.format("%s,%d,%d,%d\n",
                     operation, start, end, (end - start));
             writer.append(log);
             writer.flush();

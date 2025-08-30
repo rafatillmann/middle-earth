@@ -68,7 +68,7 @@ public class SocketGateway implements Gateway {
             String request;
             while ((request = clientIn.readLine()) != null) {
                 writer.write(request.getBytes(), entryId -> callbackAddEntry(entryId, clientOut));
-                var actualValueCounter = counter.getAndIncrement();
+                counter.getAndIncrement();
             }
         } catch (Exception e) {
             log.error("Unable to process client request", e);
@@ -100,10 +100,12 @@ public class SocketGateway implements Gateway {
 
     private void stats(int metricTime) {
         try (FileWriter writer = new FileWriter("l-throughput.txt", true)) {
+            String log;
+            int actualValueCounter;
             while (true) {
                 Thread.sleep(metricTime);
-                var actualValueCounter = counter.getAndSet(0);
-                var log = String.format("throughput (/s): %d, time: %d \n", actualValueCounter, System.nanoTime());
+                actualValueCounter = counter.getAndSet(0);
+                log = String.format("%d,%d\n", actualValueCounter, System.nanoTime());
                 writer.write(log);
                 writer.flush();
                 System.out.println(clientsToReply);

@@ -41,7 +41,6 @@ public class Server {
             String request, response, jsonResponse;
             Message message;
             while ((request = serverIn.readLine()) != null) {
-                //System.out.println("Received JSON from client: " + request);
                 message = objectMapper.readValue(request, Message.class);
                 response = processClientRequest(message);
                 jsonResponse = objectMapper.writeValueAsString(response);
@@ -74,14 +73,13 @@ public class Server {
     }
 
     private static void stats(int metricTime, int numberOfClients) {
-        try (FileWriter writer = new FileWriter(String.format("%d-throughput.txt", numberOfClients), true)) {
+        try (FileWriter writer = new FileWriter(String.format("%d-throughput.csv", numberOfClients), true)) {
             String log;
             int actualValueCounter;
             while (true) {
                 Thread.sleep(metricTime);
                 actualValueCounter = counter.getAndSet(0);
-                // Alterar formato do output (CSV)
-                log = String.format("%d, %d \n", actualValueCounter, System.nanoTime());
+                log = String.format("%d,%d\n", actualValueCounter, System.nanoTime());
                 writer.write(log);
                 writer.flush();
             }
