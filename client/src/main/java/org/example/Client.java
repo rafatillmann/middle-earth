@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.io.*;
 import java.net.Socket;
+import java.net.SocketTimeoutException;
 import java.util.Random;
 
 public class Client {
@@ -20,13 +21,13 @@ public class Client {
         proxyHost = args[0];
         proxyPort = Integer.parseInt(args[1]);
         int numberOfClients = Integer.parseInt(args[2]);
-        int numberOfRequests = Integer.parseInt(args[3]);
+        int numberOfThreads = Integer.parseInt(args[3]);
         int thinkTime = Integer.parseInt(args[4]);
         int percentRead = Integer.parseInt(args[5]);
         int testTime = Integer.parseInt(args[6]);
         int valueSize = Integer.parseInt(args[6]);
 
-        createThreads(numberOfClients, numberOfRequests, thinkTime, percentRead, testTime, valueSize);
+        createThreads(numberOfClients, numberOfThreads, thinkTime, percentRead, testTime, valueSize);
     }
 
     private static void createThreads(int numberOfThreads, int numberOfRequests, int thinkTime, int percentRead, int testTime, int valueSize) {
@@ -43,7 +44,7 @@ public class Client {
 
         new Thread(() -> {
             try {
-                Thread.sleep(testTime);
+                Thread.sleep(120_000L);
             } catch (InterruptedException ignored) {
                 Thread.currentThread().interrupt();
             }
@@ -52,9 +53,12 @@ public class Client {
     }
 
     private static void runClientRequest(boolean threadWillMeasureLatency, int numberOfRequests, int thinkTime, int percentRead, int valueSize) {
-        try (Socket socket = new Socket(proxyHost, proxyPort);
-             BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-             PrintWriter out = new PrintWriter(socket.getOutputStream(), true)) {
+        try {
+            Socket socket = new Socket(proxyHost, proxyPort);
+            socket.setSoTimeout(3000);
+
+            BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+            PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
 
             boolean readOperation;
             String op, value, jsonRequest;
@@ -67,26 +71,32 @@ public class Client {
                 op = readOperation ? "get" : "set";
                 key = rand.nextInt(100000);
                 value = readOperation ? null : "S".repeat(valueSize); // Parametrizar (4, 1024, 4096)
-
                 message = new Message(op, key, value);
                 jsonRequest = objectMapper.writeValueAsString(message);
 
                 if (threadWillMeasureLatency) {
-                    measureCurrentRequestLatency = rand.nextInt(numberOfRequests) == 0;
+                    measureCurrentRequestLatency = rand.nextInt(100) == 0;
                     if (measureCurrentRequestLatency) {
                         start = System.nanoTime();
+                        System.out.println(jsonRequest);
                         out.println(jsonRequest);
-                        in.readLine();
+                        var response = in.readLine();
+                        System.out.println(response);
                         end = System.nanoTime();
                         latency(op, start, end);
                     }
                 } else {
                     out.println(jsonRequest);
-                    in.readLine();
+                    try {
+                        in.readLine();
+                    } catch (SocketTimeoutException e) {
+                        System.out.println(Thread.currentThread().getId() + "No response from server.");
+                    }
                 }
                 Thread.sleep(thinkTime);
             }
         } catch (IOException | InterruptedException e) {
+            e.printStackTrace();
             Thread.currentThread().interrupt();
         }
     }

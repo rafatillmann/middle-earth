@@ -58,7 +58,7 @@ public class Server {
         String value = message.value();
         switch (operation) {
             case "get":
-                return store.getOrDefault(key, null);
+                return String.format("Key: %s, Value: %s", key, store.getOrDefault(key, "Key not found"));
             case "set":
                 if (value == null) {
                     return "Invalid operation";

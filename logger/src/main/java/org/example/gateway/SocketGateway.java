@@ -11,9 +11,7 @@ import org.example.interfaces.Writer;
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
@@ -21,10 +19,8 @@ import java.util.stream.Collectors;
 public class SocketGateway implements Gateway {
 
     private final LogFactory logFactory;
-    private final Map<Long, PrintWriter> clientsToReply = new ConcurrentHashMap<>();
     private Writer writer;
     private Set<Cursor> cursors;
-
     private final AtomicInteger counter = new AtomicInteger(0);
 
     public SocketGateway(LogFactory logFactory) {
@@ -50,16 +46,11 @@ public class SocketGateway implements Gateway {
         }
     }
 
-    public PrintWriter getClientToReply(long entryId) {
-        return clientsToReply.remove(entryId);
-    }
-
-    public void replyToClient(long entryId, String reply) throws IOException {
-        var clientOut = getClientToReply(entryId);
-        if (clientOut == null) {
-            return;
+    public synchronized void replyToClient(String reply, SocketClient client) throws IOException {
+        if (!client.isReplied()) {
+            client.setReplied(true);
+            client.getOut().println(reply);
         }
-        clientOut.println(reply);
     }
 
     private void handleClient(Socket clientSocket) {
@@ -67,7 +58,7 @@ public class SocketGateway implements Gateway {
              PrintWriter clientOut = new PrintWriter(clientSocket.getOutputStream(), true)) {
             String request;
             while ((request = clientIn.readLine()) != null) {
-                writer.write(request.getBytes(), entryId -> callbackAddEntry(entryId, clientOut));
+                writer.write(request.getBytes(), entryId -> callbackAddEntry(entryId, new SocketClient(clientOut)));
                 counter.getAndIncrement();
             }
         } catch (Exception e) {
@@ -75,11 +66,16 @@ public class SocketGateway implements Gateway {
         }
     }
 
-    private void callbackAddEntry(Long entryId, PrintWriter clientOut) {
-        clientsToReply.put(entryId, clientOut);
+    private void callbackAddEntry(Long toEntryId, SocketClient client) {
         for (Cursor cursor : cursors) {
             try {
-                cursor.entryAvailable(entryId);
+                cursor.entryAvailable(toEntryId, (reply) -> {
+                    try {
+                        replyToClient(reply, client);
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+                });
             } catch (LoggerException e) {
                 log.warn("Unable to notify cursors", e);
             }
@@ -90,7 +86,7 @@ public class SocketGateway implements Gateway {
         return Config.getReplicaInfo().values().stream()
                 .map(uri -> {
                     try {
-                        return new SocketCursor(uri, this, writer.getReader());
+                        return new SocketCursor(uri, writer.getReader());
                     } catch (LoggerException | IOException e) {
                         throw new RuntimeException(e);
                     }
@@ -108,7 +104,6 @@ public class SocketGateway implements Gateway {
                 log = String.format("%d,%d\n", actualValueCounter, System.nanoTime());
                 writer.write(log);
                 writer.flush();
-                System.out.println(clientsToReply);
             }
         } catch (InterruptedException | IOException e) {
             Thread.currentThread().interrupt();
