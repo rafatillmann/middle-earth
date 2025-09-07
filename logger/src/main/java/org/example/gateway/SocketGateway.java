@@ -95,7 +95,7 @@ public class SocketGateway implements Gateway {
     }
 
     private void stats(int metricTime) {
-        try (FileWriter writer = new FileWriter("l-throughput.txt", true)) {
+        try (FileWriter writer = new FileWriter("l-throughput.csv", true)) {
             String log;
             int actualValueCounter;
             while (true) {
