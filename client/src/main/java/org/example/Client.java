@@ -21,30 +21,30 @@ public class Client {
         proxyHost = args[0];
         proxyPort = Integer.parseInt(args[1]);
         int numberOfClients = Integer.parseInt(args[2]);
-        int numberOfThreads = Integer.parseInt(args[3]);
+        int numberOfRequests = Integer.parseInt(args[3]);
         int thinkTime = Integer.parseInt(args[4]);
         int percentRead = Integer.parseInt(args[5]);
         int testTime = Integer.parseInt(args[6]);
-        int valueSize = Integer.parseInt(args[6]);
+        int valueSize = Integer.parseInt(args[7]);
 
-        createThreads(numberOfClients, numberOfThreads, thinkTime, percentRead, testTime, valueSize);
+        createThreads(numberOfClients, numberOfRequests, thinkTime, percentRead, testTime, valueSize);
     }
 
-    private static void createThreads(int numberOfThreads, int numberOfRequests, int thinkTime, int percentRead, int testTime, int valueSize) {
+    private static void createThreads(int numberOfClients, int numberOfRequests, int thinkTime, int percentRead, int testTime, int valueSize) {
         try {
-            writer = new FileWriter(String.format("%d-latency.csv", numberOfThreads), true);
+            writer = new FileWriter(String.format("%d-latency.csv", numberOfClients), true);
         } catch (IOException e) {
             Thread.currentThread().interrupt();
         }
 
         new Thread(() -> runClientRequest(true, numberOfRequests, thinkTime, percentRead, valueSize)).start();
-        for (int i = 0; i < numberOfThreads - 1; i++) {
+        for (int i = 0; i < numberOfClients - 1; i++) {
             new Thread(() -> runClientRequest(false, numberOfRequests, thinkTime, percentRead, valueSize)).start();
         }
 
         new Thread(() -> {
             try {
-                Thread.sleep(120_000L);
+                Thread.sleep(testTime);
             } catch (InterruptedException ignored) {
                 Thread.currentThread().interrupt();
             }
