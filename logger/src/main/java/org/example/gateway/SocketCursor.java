@@ -28,6 +28,7 @@ public class SocketCursor implements Cursor {
     private final Socket socket;
     private final BufferedReader serverIn;
     private final PrintWriter serverOut;
+    // TODO - Search how use Future instead of Cache
     private final CacheTTL<Long, String> cache;
 
     public SocketCursor(URI uri, Reader reader) throws LoggerException, IOException {

@@ -42,6 +42,7 @@ public class Server {
             Message message;
             while ((request = serverIn.readLine()) != null) {
                 message = objectMapper.readValue(request, Message.class);
+                System.out.println(message);
                 response = processClientRequest(message);
                 jsonResponse = objectMapper.writeValueAsString(response);
                 serverOut.println(jsonResponse);
