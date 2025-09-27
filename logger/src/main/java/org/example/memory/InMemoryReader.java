@@ -4,9 +4,7 @@ import org.example.exception.LoggerException;
 import org.example.interfaces.Entry;
 import org.example.interfaces.Reader;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
 
 public class InMemoryReader implements Reader {
 
@@ -18,16 +16,20 @@ public class InMemoryReader implements Reader {
 
     @Override
     public Entry read(long entryId) throws LoggerException {
-        return null;
+        InMemoryEntry entry = inMemoryLog.getEntry(entryId);
+        if (entry == null) {
+            throw new LoggerException("Entry with ID " + entryId + " not found");
+        }
+        return entry;
     }
 
     @Override
     public List<Entry> read(long firstEntryId, long lastEntryId) throws LoggerException {
-        try {
-            return inMemoryLog.getEntriesAsync(firstEntryId, lastEntryId)
-                    .thenApply(inMemoryEntries -> (List<Entry>) new ArrayList<Entry>(inMemoryEntries)).get();
-        } catch (InterruptedException | ExecutionException e) {
-            throw new LoggerException("Unable to read data", e);
+        if (firstEntryId > lastEntryId) {
+            throw new LoggerException("First entry ID (" + firstEntryId + ") cannot be greater than last entry ID (" + lastEntryId + ")");
         }
+        
+        List<InMemoryEntry> entries = inMemoryLog.getEntries(firstEntryId, lastEntryId);
+        return entries.stream().map(entry -> (Entry) entry).toList();
     }
 }

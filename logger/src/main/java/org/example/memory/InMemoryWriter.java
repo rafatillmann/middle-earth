@@ -5,8 +5,6 @@ import org.example.interfaces.LogCallback;
 import org.example.interfaces.Reader;
 import org.example.interfaces.Writer;
 
-import java.util.concurrent.ExecutionException;
-
 public class InMemoryWriter implements Writer {
 
     private final InMemoryLog inMemoryLog;
@@ -17,20 +15,17 @@ public class InMemoryWriter implements Writer {
 
     @Override
     public long write(byte[] data) throws LoggerException {
-        return 0;
+        if (data == null) {
+            throw new LoggerException("Data cannot be null");
+        }
+        return inMemoryLog.put(data);
     }
 
     @Override
-    public long write(byte[] data, LogCallback.AddEntryCallback callback) throws LoggerException {
-        try {
-            return inMemoryLog.putAsync(data)
-                    .thenApplyAsync(entryId -> {
-                        callback.onComplete(entryId);
-                        return entryId;
-                    }).get();
-        } catch (InterruptedException | ExecutionException e) {
-            throw new LoggerException("Unable to append data", e);
-        }
+    public long write(byte[] data, LogCallback.AddEntryCallback callback) throws LoggerException {        
+        var entryId = inMemoryLog.put(data);
+        callback.onComplete(entryId);
+        return entryId;
     }
 
     @Override
