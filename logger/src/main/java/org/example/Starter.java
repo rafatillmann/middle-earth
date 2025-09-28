@@ -8,9 +8,8 @@ import org.example.memory.InMemoryLogFactory;
 
 @Slf4j
 public class Starter {
-
     //    private CuratorFramework zookkeeper;
-//    private BookKeeper bookKeeper;
+    //    private BookKeeper bookKeeper;
     private LogFactory logFactory;
     private Gateway gateway;
 
@@ -21,6 +20,7 @@ public class Starter {
         } catch (Exception e) {
             log.debug("Unable to start logger", e);
         }
+        starter.close();
     }
 
     private void start() throws Exception {
@@ -57,5 +57,13 @@ public class Starter {
 
     private Gateway getGateway() {
         return new SocketGateway(logFactory);
+    }
+
+    private void close() {
+        try {
+            gateway.close();
+        } catch (Exception e) {
+            log.debug("Unable to close resource", e);
+        }
     }
 }

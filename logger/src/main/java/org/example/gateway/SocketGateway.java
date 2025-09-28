@@ -11,7 +11,9 @@ import org.example.interfaces.Writer;
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.List;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
@@ -46,19 +48,12 @@ public class SocketGateway implements Gateway {
         }
     }
 
-    public synchronized void replyToClient(String reply, SocketClient client) throws IOException {
-        if (!client.isReplied()) {
-            client.setReplied(true);
-            client.getOut().println(reply);
-        }
-    }
-
     private void handleClient(Socket clientSocket) {
         try (BufferedReader clientIn = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
              PrintWriter clientOut = new PrintWriter(clientSocket.getOutputStream(), true)) {
             String request;
             while ((request = clientIn.readLine()) != null) {
-                writer.write(request.getBytes(), entryId -> callbackAddEntry(entryId, new SocketClient(clientOut)));
+                writer.write(request.getBytes(), entryId -> callbackAddEntry(entryId, clientOut));
                 counter.getAndIncrement();
             }
         } catch (Exception e) {
@@ -66,20 +61,25 @@ public class SocketGateway implements Gateway {
         }
     }
 
-    private void callbackAddEntry(Long toEntryId, SocketClient client) {
-        for (Cursor cursor : cursors) {
-            try {
-                cursor.entryAvailable(toEntryId, (reply) -> {
+    private void callbackAddEntry(Long toEntryId, PrintWriter clientOut) {
+        List<CompletableFuture<String>> replyFutures = cursors.stream()
+                .map(cursor -> {
                     try {
-                        replyToClient(reply, client);
-                    } catch (IOException e) {
-                        throw new RuntimeException(e);
+                        return cursor.entryAvailable(toEntryId);
+                    } catch (LoggerException e) {
+                        log.warn("Unable to notify cursors", e);
+                        return CompletableFuture.<String>failedFuture(e);
                     }
+                })
+                .toList();
+
+        CompletableFuture.anyOf(replyFutures.toArray(new CompletableFuture[0]))
+                .thenAccept(clientOut::println)
+                .exceptionally(ex -> {
+                    log.error("An error occurred during asynchronous cursor processing", ex);
+                    return null;
                 });
-            } catch (LoggerException e) {
-                log.warn("Unable to notify cursors", e);
-            }
-        }
+
     }
 
     private Set<Cursor> getCursors(Writer writer) {
@@ -107,6 +107,17 @@ public class SocketGateway implements Gateway {
             }
         } catch (InterruptedException | IOException e) {
             Thread.currentThread().interrupt();
+        }
+    }
+
+    @Override
+    public void close() {
+        try {
+            for (Cursor cursor : cursors) {
+                cursor.close();
+            }
+        } catch (Exception e) {
+            log.error("Unable to close resource", e);
         }
     }
 }

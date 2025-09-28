@@ -53,8 +53,7 @@ public class Client {
     }
 
     private static void runClientRequest(boolean threadWillMeasureLatency, int thinkTime, int percentRead, int valueSize, int latencyBound) {
-        try {
-            Socket socket = new Socket(proxyHost, proxyPort);
+        try (Socket socket = new Socket(proxyHost, proxyPort)) {
             socket.setSoTimeout(5000);
 
             BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
@@ -99,6 +98,8 @@ public class Client {
                 }
                 Thread.sleep(thinkTime);
             }
+            out.close();
+            in.close();
         } catch (IOException | InterruptedException e) {
             e.printStackTrace();
             Thread.currentThread().interrupt();
