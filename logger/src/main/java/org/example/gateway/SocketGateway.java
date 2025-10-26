@@ -37,7 +37,7 @@ public class SocketGateway implements Gateway {
         try (ServerSocket proxyServerSocket = new ServerSocket(Config.getServerPort());) {
             log.info("Server listening on port {}", Config.getServerPort());
 
-            new Thread(() -> stats(1000)).start();
+            //new Thread(() -> stats(1000)).start();
 
             while (true) {
                 Socket clientSocket = proxyServerSocket.accept();

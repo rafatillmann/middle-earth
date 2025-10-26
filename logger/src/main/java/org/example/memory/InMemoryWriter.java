@@ -14,18 +14,14 @@ public class InMemoryWriter implements Writer {
     }
 
     @Override
-    public long write(byte[] data) throws LoggerException {
-        if (data == null) {
-            throw new LoggerException("Data cannot be null");
-        }
-        return inMemoryLog.put(data);
+    public void write(byte[] data) throws LoggerException {
+        inMemoryLog.put(data);
     }
 
     @Override
-    public long write(byte[] data, LogCallback.AddEntryCallback callback) throws LoggerException {        
+    public void write(byte[] data, LogCallback.AddEntryCallback callback) throws LoggerException {
         var entryId = inMemoryLog.put(data);
         callback.onComplete(entryId);
-        return entryId;
     }
 
     @Override

@@ -4,8 +4,4 @@ public interface LogCallback {
     interface AddEntryCallback {
         void onComplete(Long entryId);
     }
-
-    interface ReplyCallback {
-        void onComplete(String reply);
-    }
 }

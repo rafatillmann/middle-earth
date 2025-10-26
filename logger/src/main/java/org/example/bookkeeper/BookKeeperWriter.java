@@ -1,7 +1,6 @@
 package org.example.bookkeeper;
 
 import com.google.common.collect.ImmutableMap;
-import org.apache.bookkeeper.client.api.BKException;
 import org.apache.bookkeeper.client.api.BookKeeper;
 import org.apache.bookkeeper.client.api.WriteHandle;
 import org.example.exception.LoggerException;
@@ -29,23 +28,23 @@ public class BookKeeperWriter implements Writer {
     }
 
     @Override
-    public long write(byte[] data) throws LoggerException {
+    public void write(byte[] data) throws LoggerException {
         try {
-            return writer.append(data);
-        } catch (InterruptedException | BKException e) {
+            writer.appendAsync(data);
+        } catch (Exception e) {
             throw new LoggerException("Unable to append data", e);
         }
     }
 
     @Override
-    public long write(byte[] data, AddEntryCallback callback) throws LoggerException {
+    public void write(byte[] data, AddEntryCallback callback) throws LoggerException {
         try {
-            return writer.appendAsync(data)
+            writer.appendAsync(data)
                     .thenApplyAsync(entryId -> {
                         callback.onComplete(entryId);
                         return entryId;
-                    }).get();
-        } catch (InterruptedException | ExecutionException e) {
+                    });
+        } catch (Exception e) {
             throw new LoggerException("Unable to append data", e);
         }
     }

@@ -84,7 +84,6 @@ public class SocketCursor implements Cursor {
                     for (Entry entry : reader.read(fromEntryId, toEntryId)) {
                         byte[] payload = entry.payload();
                         serverOut.println(new String(payload, StandardCharsets.UTF_8));
-                        serverOut.flush();
 
                         String reply = serverIn.readLine();
                         pendingReply.put(entry.entryId(), reply);
